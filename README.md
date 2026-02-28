@@ -1,6 +1,6 @@
 # AX
 
-Custom Development Workflow Layer for [GSD](https://github.com/bpawnzZ/claude-gsd). Automates testing pyramid enforcement, CI scaffolding, GitHub Flow setup, and Notion documentation across the entire project lifecycle.
+Custom Development Workflow Layer for [GSD](https://github.com/glittercowboy/get-shit-done). Automates testing pyramid enforcement, CI scaffolding, GitHub Flow setup, and Notion documentation across the entire project lifecycle.
 
 ## What It Does
 
@@ -23,7 +23,7 @@ AX wraps GSD's planning and execution engine with:
 ## Setup
 
 1. Copy `.claude/commands/ax/` and `.claude/ax/` into your project's `.claude/` directory
-2. Make sure [GSD](https://github.com/bpawnzZ/claude-gsd) is installed
+2. Make sure [GSD](https://github.com/glittercowboy/get-shit-done) is installed
 3. Run `/ax:init` in Claude Code
 
 ## Design Principles
