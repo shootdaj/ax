@@ -7,10 +7,16 @@ Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, mcp__claude_a
 
 ## Pre-flight
 
-1. Read `.claude/ax/config.json` to load project config
-2. Read `.planning/ROADMAP.md` to get all phases
-3. Determine which phases are completed (from config `phases_completed` array)
-4. Build list of remaining phases in order
+1. **Check for paused work first.** Look for `.planning/STATE.md` or any GSD pause/handoff artifacts. If found:
+   - Run `/gsd:resume-work` via the Skill tool automatically (the user should NOT need to do this manually)
+   - This restores context from the previous session
+   - Then continue with the steps below
+
+2. Read `.claude/ax/config.json` to load project config
+3. Read `.planning/ROADMAP.md` to get all phases
+4. Determine which phases are completed (from config `phases_completed` array)
+5. Also check `.planning/phases/phase-*/` directories — if a phase has CONTEXT.md, PLAN.md, or completed execution artifacts but isn't in `phases_completed`, it's partially done. Resume from where it left off rather than restarting it.
+6. Build list of remaining/incomplete phases in order
 
 If config doesn't exist, tell the user to run `/ax:init` first and stop.
 If no phases remain, tell the user all phases are complete and suggest `/ax:finish`.
@@ -65,8 +71,9 @@ After each phase completes:
 
 2. **Context window check:** If you're running low on context:
    - Run `/gsd:pause-work` via Skill tool to create a handoff document
-   - Display: "Context window running low. Work paused at Phase {N}. To resume: `/gsd:resume-work` then `/ax:run`"
+   - Display: "Context window running low. Work paused at Phase {N}. Run `/ax:run` again to continue."
    - Stop execution
+   - **Note:** The next `/ax:run` invocation will auto-resume from here (see Pre-flight step 1). The user just runs the same command again.
 
 ---
 
