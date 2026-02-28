@@ -26,17 +26,30 @@ Wait for this to complete fully before proceeding. The output includes:
 
 Examine the project to determine the tech stack. Check these sources in order:
 1. Files from GSD output: `PROJECT.md`, `.planning/research/` files
-2. Project files: `go.mod`, `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`
+2. Project files: `go.mod`, `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `build.gradle`, `pom.xml`, `mix.exs`, `Package.swift`, etc.
 3. If still unclear, check ROADMAP.md for technology mentions
 
-Set the stack variable to one of: `go`, `node`, `python`, `rust`
+**If a known template stack is detected** (`go`, `node`, `python`, `rust`):
+- Set `stack` to the detected value
+- Auto-detect language version, package manager, and test framework
+- Use the matching CI template and test command defaults
 
-If the stack doesn't match any template, use `node` as default and note this in the config.
+**If the stack is anything else** (Swift, Kotlin, Elixir, Java, C#, Ruby, Zig, a multi-language project, etc.):
+- Set `stack` to the actual stack name (e.g., `swift`, `kotlin`, `elixir`)
+- Set `has_template` to `false` in config
+- Research the stack's ecosystem (web search) to determine idiomatic test runners, linters, CI setup, and directory conventions
+- Set up sensible defaults based on research — the agent should be able to figure out how to test, lint, and build any mainstream stack without asking
+- Only ask the user if the stack is truly obscure or the research is inconclusive. In that case, ask a single open-ended question:
 
-Also detect:
-- **Language version** (e.g., Go 1.22, Node 20, Python 3.12, Rust stable)
-- **Package manager** (npm, yarn, pnpm, bun, pip, cargo)
-- **Test framework** (go test, jest, vitest, pytest, cargo test)
+> "Detected stack: **{stack}**. How do you run tests, lint, and build in this project? (e.g., `swift test`, `swiftlint`, `swift build`). I'll set up CI and test infrastructure from there."
+
+Store all detected/provided values:
+- **Language/runtime version** (e.g., Go 1.22, Node 20, Python 3.12, Swift 5.10)
+- **Package manager** (npm, cargo, pip, swift package manager, gradle, mix, etc.)
+- **Test framework** (go test, jest, pytest, XCTest, JUnit, ExUnit, etc.)
+- **Lint command**
+- **Build command**
+- **Unit/integration/scenario test commands**
 
 ---
 
@@ -52,7 +65,8 @@ Store the response. If the user says to skip Notion, set `notion.parent_page_id`
 
 ### Step 4: Scaffold CI
 
-1. Read the appropriate CI template from `.claude/ax/references/ci-templates/{stack}.yml`
+**If the stack has a template** (`go`, `node`, `python`, `rust`):
+1. Read the CI template from `.claude/ax/references/ci-templates/{stack}.yml`
 2. Replace all `{{VARIABLE}}` placeholders with detected values from Step 2
 3. Write the result to `.github/workflows/ci.yml`
 
@@ -61,21 +75,33 @@ For Node.js projects, also detect and set:
 - `{{INSTALL_COMMAND}}` — `npm ci`, `yarn install --frozen-lockfile`, `pnpm install --frozen-lockfile`, or `bun install`
 - `{{LINT_COMMAND}}` — `npm run lint`, `yarn lint`, etc.
 
+**If the stack has no template:**
+Generate a `.github/workflows/ci.yml` from scratch using the commands gathered in Step 2. Follow the same pipeline pattern as the templates:
+
+```
+lint → unit tests → harness up → integration tests → scenario tests → harness down
+```
+
+Use your knowledge of the stack to set up the correct GitHub Actions runner, language setup action (if one exists), caching, and service containers. If the stack needs docker-compose for test infra, use the `docker compose` approach. If it doesn't need any test infrastructure, skip the harness steps.
+
+Write the generated CI file and note `"ci_generated": true` in config.
+
 ---
 
 ### Step 5: Scaffold Testing Infrastructure
 
-1. **Create test directories:**
-   - For Go: `test/integration/`, `test/scenarios/`
-   - For Node: `test/integration/`, `test/scenarios/`
-   - For Python: `tests/integration/`, `tests/scenarios/`
-   - For Rust: `tests/integration/`, `tests/scenarios/`
+1. **Create test directories** using the stack's idiomatic conventions:
+   - Go: `test/integration/`, `test/scenarios/`
+   - Node: `test/integration/`, `test/scenarios/`
+   - Python: `tests/integration/`, `tests/scenarios/`
+   - Rust: `tests/integration/`, `tests/scenarios/`
+   - Other stacks: use the convention gathered in Step 2, or research the idiomatic test layout for the stack. Default to `test/integration/`, `test/scenarios/` if unclear.
 
-2. **Create `docker-compose.test.yml`** at project root with appropriate services based on what the project needs (check ROADMAP.md and REQUIREMENTS.md for database/cache/queue mentions). Default to PostgreSQL + Redis if unclear.
+2. **Create `docker-compose.test.yml`** at project root — but only if the project actually needs test infrastructure. Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue mentions. If the project is a pure CLI tool or library with no external dependencies, skip this file entirely and set `docker_compose_file` to `null` in config.
 
-3. **Create `TEST_GUIDE.md`** at project root using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced.
+3. **Create `TEST_GUIDE.md`** at project root using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced using values from Step 2.
 
-Set test commands based on stack:
+**Test commands** come from Step 2 — either auto-detected for known stacks or provided by the user/researched for custom stacks. Known stack defaults:
 - **Go:** `go test ./internal/... ./pkg/... -v -race` (unit), `go test ./test/integration/... -v -tags integration` (integration), `go test ./test/scenarios/... -v -tags scenario` (scenario)
 - **Node:** `npx vitest run --dir src` (unit), `npx vitest run --dir test/integration` (integration), `npx vitest run --dir test/scenarios` (scenario) — adjust for jest if detected
 - **Python:** `pytest tests/unit/ -v` (unit), `pytest tests/integration/ -v -m integration` (integration), `pytest tests/scenarios/ -v -m scenario` (scenario)
