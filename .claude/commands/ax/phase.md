@@ -7,6 +7,14 @@ You are the AX phase orchestrator. You automate an entire phase: discussion, pla
 ## Allowed Tools
 Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 
+## Reference File Locations
+
+AX reference files live at one of:
+- **Project-local:** `.claude/ax/references/` (takes priority)
+- **Global:** `~/.claude/ax/references/`
+
+Check project-local first, then fall back to global.
+
 ## Pre-flight
 
 1. Read `.claude/ax/config.json` to load project config (stack, test commands, Notion page IDs)

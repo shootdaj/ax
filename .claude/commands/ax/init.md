@@ -9,6 +9,14 @@ Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion, Skill, mcp__claude_a
 
 Execute these steps in order. Do NOT skip steps. Do NOT ask for confirmation between steps — only pause where explicitly marked.
 
+## Reference File Locations
+
+AX reference files (templates, CI configs, Notion templates) live at one of:
+- **Project-local:** `.claude/ax/references/` (takes priority)
+- **Global:** `~/.claude/ax/references/`
+
+When the instructions say "read from `.claude/ax/references/...`", check the project-local path first, then fall back to the global path.
+
 ---
 
 ### Step 1: Run GSD New Project

@@ -20,11 +20,35 @@ AX wraps GSD's planning and execution engine with:
 | `/ax:finish [version]` | Complete milestone: audit → gaps → tag → final docs |
 | `/ax:status` | Quick overview: progress + test health + CI status + doc freshness |
 
-## Setup
+## Install
 
-1. Copy `.claude/commands/ax/` and `.claude/ax/` into your project's `.claude/` directory
-2. Make sure [GSD](https://github.com/glittercowboy/get-shit-done) is installed
-3. Run `/ax:init` in Claude Code
+**Requires:** [GSD](https://github.com/glittercowboy/get-shit-done) installed globally (`npx get-shit-done-cc --claude --global`)
+
+### Global Install (recommended)
+
+```bash
+# Clone and install to ~/.claude/
+git clone https://github.com/shootdaj/ax.git /tmp/ax-install
+cp -r /tmp/ax-install/.claude/commands/ax/ ~/.claude/commands/ax/
+cp -r /tmp/ax-install/.claude/ax/ ~/.claude/ax/
+rm -rf /tmp/ax-install
+```
+
+This makes `/ax:*` commands available in every project.
+
+### Per-Project Install
+
+```bash
+# From your project root
+git clone https://github.com/shootdaj/ax.git /tmp/ax-install
+cp -r /tmp/ax-install/.claude/commands/ax/ .claude/commands/ax/
+cp -r /tmp/ax-install/.claude/ax/ .claude/ax/
+rm -rf /tmp/ax-install
+```
+
+### Usage
+
+Open Claude Code in any project and run `/ax:init`.
 
 ## Design Principles
 
