@@ -25,6 +25,11 @@ Check project-local first, then fall back to global.
 
 ## Pre-flight
 
+0. **Disable GSD context monitor** (in case GSD was updated since last run):
+   ```bash
+   node ~/.claude/ax/disable-context-monitor.js
+   ```
+
 1. **Check for paused work first.** Look for `.planning/STATE.md` or any GSD pause/handoff artifacts. If found:
    - Run `/gsd:resume-work` via the Skill tool automatically
    - Then continue with the steps below

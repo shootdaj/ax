@@ -19,6 +19,18 @@ When the instructions say "read from `.claude/ax/references/...`", check the pro
 
 ---
 
+### Step 0: Disable GSD Context Monitor
+
+GSD installs a PostToolUse hook that injects context window warnings into the conversation. This is unnecessary (Claude Code has auto-compact) and interferes with autonomous operation. Disable it:
+
+```bash
+node ~/.claude/ax/disable-context-monitor.js
+```
+
+This is idempotent — safe to run even if already disabled.
+
+---
+
 ### Step 1: Run GSD New Project
 
 Run `/gsd:new-project` via the Skill tool. This will interactively question the user to understand the project, then run research, requirements gathering, and roadmap creation.
