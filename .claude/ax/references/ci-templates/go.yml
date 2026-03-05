@@ -39,74 +39,38 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: unit-tests
+    {{#IF_SERVICES}}
     services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '{{GO_VERSION}}'
       - name: Run integration tests
+        {{#IF_SERVICES}}
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/testdb?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
         run: go test ./test/integration/... -v -tags integration -count=1
 
   scenario-tests:
     name: Scenario Tests
     runs-on: ubuntu-latest
     needs: integration-tests
+    {{#IF_SERVICES}}
     services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '{{GO_VERSION}}'
       - name: Run scenario tests
+        {{#IF_SERVICES}}
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/testdb?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
         run: go test ./test/scenarios/... -v -tags scenario -count=1

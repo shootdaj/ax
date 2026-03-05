@@ -3,7 +3,7 @@
 You are the AX init orchestrator. You set up everything for a new project: GSD project initialization, CI scaffolding, testing infrastructure, GitHub Flow, and Notion documentation.
 
 ## Allowed Tools
-Read, Write, Edit, Bash, Glob, Grep, Task, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
+Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 
 ## Execution Steps
 
@@ -107,10 +107,18 @@ Store the choice in config as `"profile"`.
 
 ### Step 5: Scaffold CI
 
+**First, determine if the project needs external services** (postgres, redis, etc.):
+- Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue/message-broker mentions
+- Check PROJECT.md for infrastructure references
+- If the project uses SQLite, file-based storage, or no database at all, it does NOT need services
+
 **If the stack has a template** (`go`, `node`, `python`, `rust`):
 1. Read the CI template from `.claude/ax/references/ci-templates/{stack}.yml`
 2. Replace all `{{VARIABLE}}` placeholders with detected values from Step 2
-3. Write the result to `.github/workflows/ci.yml`
+3. **Handle service conditionals:**
+   - **If the project needs external services:** Replace `{{#IF_SERVICES}}` and `{{/IF_SERVICES}}` markers (remove just the marker lines, keep the content between them). Replace `{{SERVICES_BLOCK}}` with the appropriate service definitions (postgres, redis, etc. — only the ones actually needed). Replace `{{SERVICES_ENV}}` with the matching environment variables (DATABASE_URL, REDIS_URL, etc.).
+   - **If the project does NOT need external services:** Remove everything between `{{#IF_SERVICES}}` and `{{/IF_SERVICES}}` markers, inclusive.
+4. Write the result to `.github/workflows/ci.yml`
 
 For Node.js projects, also detect and set:
 - `{{PACKAGE_MANAGER}}` — npm, yarn, pnpm, or bun
@@ -125,10 +133,10 @@ For Python projects, also detect and set:
 Generate a `.github/workflows/ci.yml` from scratch using the commands gathered in Step 2. Follow the same pipeline pattern as the templates:
 
 ```
-lint → unit tests → harness up → integration tests → scenario tests → harness down
+lint → unit tests → integration tests → scenario tests
 ```
 
-Use your knowledge of the stack to set up the correct GitHub Actions runner, language setup action (if one exists), caching, and service containers. If the stack needs docker-compose for test infra, use the `docker compose` approach. If it doesn't need any test infrastructure, skip the harness steps.
+Use your knowledge of the stack to set up the correct GitHub Actions runner, language setup action (if one exists), caching, and service containers. Only add service containers if the project actually needs them (databases, caches, message brokers, etc.). If the project has no external dependencies, skip service containers entirely.
 
 Write the generated CI file and note `"ci_generated": true` in config.
 
@@ -145,7 +153,7 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 2. **Create `docker-compose.test.yml`** at project root — but only if the project actually needs test infrastructure. Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue mentions. If the project is a pure CLI tool or library with no external dependencies, skip this file entirely and set `docker_compose_file` to `null` in config.
 
-3. **Create `TEST_GUIDE.md`** at project root using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced using values from Step 2.
+3. **Create `TEST_GUIDE.md`** at project root using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced using values from Step 2. **If `docker_compose_file` is null**, remove all `docker compose` lines from the generated TEST_GUIDE.md (the `# Start test infrastructure`, `# Stop test infrastructure` blocks, and the docker compose lines in the full pyramid command). The integration and scenario test commands should appear standalone without docker compose wrapping.
 
 **Test commands** come from Step 2 — either auto-detected for known stacks or provided by the user/researched for custom stacks. Known stack defaults:
 - **Go:** `go test ./internal/... ./pkg/... -v -race` (unit), `go test ./test/integration/... -v -tags integration` (integration), `go test ./test/scenarios/... -v -tags scenario` (scenario)
@@ -160,17 +168,22 @@ Write the generated CI file and note `"ci_generated": true` in config.
 Run these commands via Bash:
 
 ```bash
-# Create phase-1 branch from main
-git checkout main 2>/dev/null || git checkout -b main
+# Ensure we're on main (rename master→main if needed)
+git checkout main 2>/dev/null || (git checkout master 2>/dev/null && git branch -m master main) || git checkout -b main
 git checkout -b phase-1-setup
+```
 
+Then set up branch protection (requires GitHub remote, `gh` CLI, and admin access):
+
+```bash
 # Get owner/repo from git remote
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
 
-# Set up branch protection on main (requires gh CLI + admin access)
-gh api "repos/${REPO}/branches/main/protection" \
-  --method PUT \
-  --input - <<'EOF'
+# Only attempt branch protection if we got a repo name
+if [ -n "$REPO" ]; then
+  gh api "repos/${REPO}/branches/main/protection" \
+    --method PUT \
+    --input - <<'EOF'
 {
   "required_status_checks": {
     "strict": true,
@@ -183,9 +196,10 @@ gh api "repos/${REPO}/branches/main/protection" \
   "allow_deletions": false
 }
 EOF
+fi
 ```
 
-If branch protection fails (e.g., free plan, no admin access), log a warning but continue. Do NOT fail the init.
+If branch protection fails (e.g., free plan, no admin access, no remote), log a warning but continue. Do NOT fail the init.
 
 ---
 

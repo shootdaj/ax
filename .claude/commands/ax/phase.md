@@ -5,7 +5,7 @@ You are the AX phase orchestrator. You automate an entire phase: discussion, pla
 **Arguments:** `$ARGUMENTS` should contain the phase number (e.g., `3`).
 
 ## Allowed Tools
-Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
+Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 
 ## Reference File Locations
 
@@ -165,7 +165,7 @@ Check results from Steps 6 and 8:
 
 **Skip if Notion is not configured (parent_page_id is null).**
 
-Spawn a Task agent (subagent_type: general-purpose) to handle Notion updates. The agent should:
+Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The agent should:
 
 1. Read the current codebase to understand architecture, API, and components
 2. Update these Notion pages (using page IDs from config):

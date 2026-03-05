@@ -33,15 +33,17 @@ For each tier, capture pass/fail counts:
 ```bash
 # Unit tests (run and capture summary)
 {config.testing.unit_command} 2>&1 | tail -20
-
-# Only run integration/scenario if docker-compose file exists AND harness can start
-if [ -f {config.testing.docker_compose_file} ]; then
-  docker compose -f {config.testing.docker_compose_file} up -d --wait 2>/dev/null
-  {config.testing.integration_command} 2>&1 | tail -20
-  {config.testing.scenario_command} 2>&1 | tail -20
-  docker compose -f {config.testing.docker_compose_file} down -v 2>/dev/null
-fi
 ```
+
+**If `config.testing.docker_compose_file` is not null:**
+```bash
+docker compose -f {config.testing.docker_compose_file} up -d --wait 2>/dev/null
+{config.testing.integration_command} 2>&1 | tail -20
+{config.testing.scenario_command} 2>&1 | tail -20
+docker compose -f {config.testing.docker_compose_file} down -v 2>/dev/null
+```
+
+**If `config.testing.docker_compose_file` is null:** Run integration and scenario commands directly (without docker compose), if those commands are set in config. If they are also null/empty, skip those tiers.
 
 If tests haven't been written yet (commands fail with "no test files"), report "No tests yet" rather than "Failed".
 

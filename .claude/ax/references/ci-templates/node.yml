@@ -43,29 +43,10 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: unit-tests
+    {{#IF_SERVICES}}
     services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,38 +56,20 @@ jobs:
       - name: Install dependencies
         run: {{INSTALL_COMMAND}}
       - name: Run integration tests
+        {{#IF_SERVICES}}
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/testdb?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
         run: {{INTEGRATION_COMMAND}}
 
   scenario-tests:
     name: Scenario Tests
     runs-on: ubuntu-latest
     needs: integration-tests
+    {{#IF_SERVICES}}
     services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -116,7 +79,8 @@ jobs:
       - name: Install dependencies
         run: {{INSTALL_COMMAND}}
       - name: Run scenario tests
+        {{#IF_SERVICES}}
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/testdb?sslmode=disable
-          REDIS_URL: redis://localhost:6379
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
         run: {{SCENARIO_COMMAND}}

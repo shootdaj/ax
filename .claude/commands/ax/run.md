@@ -3,7 +3,7 @@
 You are the AX autopilot orchestrator. You chain phases for every remaining phase in the roadmap, then finish the milestone. One command, entire project. The user may walk away — everything should complete without intervention.
 
 ## Allowed Tools
-Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
+Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 
 ## Context Window Strategy
 
@@ -78,20 +78,20 @@ Wait for the user's response. If they provide values, store them where the phase
 
 ### Run Phase via Subagent
 
-**Do NOT run `/ax:phase` directly in your context.** Instead, spawn a Task subagent:
+**Do NOT run `/ax:phase` directly in your context.** Instead, spawn a subagent:
 
 ```
-Task(subagent_type: "general-purpose", prompt: "...")
+Agent(subagent_type: "general-purpose", prompt: "...")
 ```
 
 **Before spawning**, read the contents of the phase command file (`~/.claude/commands/ax/phase.md` or `.claude/commands/ax/phase.md`) so you can embed it in the subagent prompt.
 
 The subagent prompt should include:
-1. The full contents of the phase command instructions (embed the text directly — subagents cannot use the Skill tool to invoke slash commands, so they need the instructions inlined)
+1. The full contents of the phase command instructions (embed the text directly — subagents cannot invoke slash commands directly, so they need the instructions inlined)
 2. The phase number: N
 3. The AX config contents (from `.claude/ax/config.json`)
 4. Whether this is a fresh phase or a resume (and what artifacts already exist)
-5. Explicit instruction: "When the instructions say 'run /gsd:X via the Skill tool', use the Skill tool with skill_name 'gsd:X'. Task subagents DO have access to the Skill tool."
+5. Explicit instruction: "When the instructions say 'run /gsd:X via the Skill tool', use the Skill tool with skill_name 'gsd:X'. Subagents DO have access to the Skill tool."
 6. Instruction to return a structured summary at the end:
    - Phase number and title
    - Status: completed / failed

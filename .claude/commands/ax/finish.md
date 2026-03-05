@@ -5,7 +5,7 @@ You are the AX milestone completion orchestrator. You wrap up a milestone: audit
 **Arguments:** `$ARGUMENTS` may contain a version string (e.g., `v1.0`). If not provided, determine from PROJECT.md or default to `v1.0`.
 
 ## Allowed Tools
-Read, Write, Bash, Task, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
+Read, Write, Bash, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 
 ## Pre-flight
 
@@ -58,7 +58,7 @@ This will:
 
 **Skip if Notion is not configured.**
 
-Spawn a Task agent (subagent_type: general-purpose) to create comprehensive final documentation. The agent should:
+Spawn an Agent (subagent_type: general-purpose) to create comprehensive final documentation. The agent should:
 
 1. **Read the entire codebase** to create accurate, up-to-date documentation
 2. **Update all Notion doc pages** (using page IDs from config):

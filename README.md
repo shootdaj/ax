@@ -24,26 +24,31 @@ AX wraps GSD's planning and execution engine with:
 
 **Requires:** [GSD](https://github.com/glittercowboy/get-shit-done) installed globally (`npx get-shit-done-cc --claude --global`)
 
-### Global Install (recommended)
+### One-Line Install (recommended)
 
 ```bash
-# Clone and install to ~/.claude/
+curl -fsSL https://raw.githubusercontent.com/shootdaj/ax/main/install.sh | bash
+```
+
+This installs AX commands globally to `~/.claude/`, making `/ax:*` available in every project.
+
+### Update
+
+Run the same install command — it overwrites existing files with the latest version.
+
+### Manual Install
+
+```bash
 git clone https://github.com/shootdaj/ax.git /tmp/ax-install
 cp -r /tmp/ax-install/.claude/commands/ax/ ~/.claude/commands/ax/
 cp -r /tmp/ax-install/.claude/ax/ ~/.claude/ax/
 rm -rf /tmp/ax-install
 ```
 
-This makes `/ax:*` commands available in every project.
-
-### Per-Project Install
+### Uninstall
 
 ```bash
-# From your project root
-git clone https://github.com/shootdaj/ax.git /tmp/ax-install
-cp -r /tmp/ax-install/.claude/commands/ax/ .claude/commands/ax/
-cp -r /tmp/ax-install/.claude/ax/ .claude/ax/
-rm -rf /tmp/ax-install
+rm -rf ~/.claude/commands/ax ~/.claude/ax
 ```
 
 ### Usage
