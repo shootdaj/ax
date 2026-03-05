@@ -87,12 +87,18 @@ Spawn a Task agent (subagent_type: general-purpose) to create comprehensive fina
 Run the complete test pyramid one final time to confirm everything passes:
 
 ```bash
-{config.testing.unit_command} && \
-  docker compose -f {config.testing.docker_compose_file} up -d --wait && \
+{config.testing.unit_command}
+```
+
+**If `config.testing.docker_compose_file` is not null:**
+```bash
+docker compose -f {config.testing.docker_compose_file} up -d --wait && \
   {config.testing.integration_command} && \
   {config.testing.scenario_command} ; \
   docker compose -f {config.testing.docker_compose_file} down -v
 ```
+
+**If `config.testing.docker_compose_file` is null:** Run integration and scenario commands directly (if they exist), or skip those tiers.
 
 ---
 

@@ -20,10 +20,10 @@ jobs:
           python-version: '{{PYTHON_VERSION}}'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          {{INSTALL_COMMAND}}
           pip install ruff
       - name: Lint
-        run: ruff check .
+        run: {{LINT_COMMAND}}
 
   unit-tests:
     name: Unit Tests

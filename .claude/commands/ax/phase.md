@@ -33,9 +33,12 @@ If config doesn't exist, tell the user to run `/ax:init` first and stop.
 Check if `.planning/phases/phase-{N}/CONTEXT.md` exists.
 
 - **If it exists:** Skip this step (context already gathered)
-- **If it does NOT exist:** Run `/gsd:discuss-phase $ARGUMENTS --auto` via the Skill tool
+- **If it does NOT exist:** Run `/gsd:discuss-phase $ARGUMENTS` via the Skill tool
 
-The `--auto` flag auto-resolves `checkpoint:decision` and `checkpoint:human-verify` prompts. It only pauses for `checkpoint:human-action` (things that genuinely require manual human intervention like creating accounts, making payments, etc.).
+When GSD asks questions or presents checkpoints during discussion:
+- **Decision checkpoints**: Auto-resolve by choosing the most sensible option based on project context. Don't ask the user.
+- **Verification checkpoints**: Auto-approve. Don't ask the user to verify.
+- **Human-action checkpoints** (account creation, payments, manual browser tasks): These genuinely need the user. Use AskUserQuestion to surface them.
 
 ---
 
@@ -60,10 +63,12 @@ Reference: TEST_GUIDE.md for requirement mapping, .claude/ax/references/testing-
 
 ### Step 3: Plan Phase
 
-Run `/gsd:plan-phase $ARGUMENTS --auto` via the Skill tool. This will:
+Run `/gsd:plan-phase $ARGUMENTS` via the Skill tool. This will:
 - Research how to implement the phase
 - Create a detailed plan (PLAN.md)
 - Verify plan quality via plan-checker
+
+When GSD asks questions during planning, auto-resolve with sensible defaults (same checkpoint strategy as Step 1).
 
 ---
 
@@ -98,18 +103,17 @@ Read test commands from config. Execute in order:
 # 1. Unit tests
 {config.testing.unit_command}
 
-# 2. Start test infrastructure
+# 2-5. Only if docker_compose_file is not null:
 docker compose -f {config.testing.docker_compose_file} up -d --wait
-
-# 3. Integration tests
 {config.testing.integration_command}
-
-# 4. Scenario tests
 {config.testing.scenario_command}
-
-# 5. Stop test infrastructure
 docker compose -f {config.testing.docker_compose_file} down -v
 ```
+
+**If `config.testing.docker_compose_file` is null** (project has no test infrastructure):
+- Run unit tests only
+- Run integration and scenario test commands directly (without docker compose), if they exist
+- If integration/scenario commands are also null or empty, skip those tiers
 
 Capture results from each tier: total tests, passed, failed, skipped.
 
@@ -146,7 +150,8 @@ Check results from Steps 6 and 8:
 2. Create a gap closure plan targeting only the failures:
    - For test failures: identify the root cause, create fix tasks
    - For verification gaps: create tasks to implement missing functionality
-3. Run `/gsd:execute-phase $ARGUMENTS --gaps-only` via Skill tool to execute only the gap closure tasks
+   - Write these tasks into a new plan file: `.planning/phases/phase-{N}/PLAN-gaps.md`
+3. Run `/gsd:execute-phase $ARGUMENTS` via Skill tool. The executor will pick up the new gap plan and execute the fix tasks.
 4. Re-run the test pyramid (repeat Step 6)
 5. Update the phase report with gap closure results
 

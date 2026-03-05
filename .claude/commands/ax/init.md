@@ -83,7 +83,29 @@ Store the response. If the user says to skip Notion, set `notion.parent_page_id`
 
 ---
 
-### Step 4: Scaffold CI
+### Step 4: Ask Quality vs Speed Preference
+
+Use AskUserQuestion to ask:
+
+> "Build preference — **quality** or **speed**?
+>
+> - **Quality**: Uses the strongest model (Opus) for all GSD agents. More thorough planning, deeper research, better code. Slower and costs more.
+> - **Speed**: Uses a fast model (Sonnet) for most GSD agents. Good enough for straightforward projects. Much faster and cheaper.
+>
+> Default: **quality**"
+
+Map the response:
+- **quality** → GSD profile `quality`
+- **speed** → GSD profile `budget`
+- If they say something in between (e.g., "balanced") → GSD profile `balanced`
+
+Apply the setting immediately by running `/gsd:set-profile` via the Skill tool with the chosen profile.
+
+Store the choice in config as `"profile"`.
+
+---
+
+### Step 5: Scaffold CI
 
 **If the stack has a template** (`go`, `node`, `python`, `rust`):
 1. Read the CI template from `.claude/ax/references/ci-templates/{stack}.yml`
@@ -94,6 +116,10 @@ For Node.js projects, also detect and set:
 - `{{PACKAGE_MANAGER}}` — npm, yarn, pnpm, or bun
 - `{{INSTALL_COMMAND}}` — `npm ci`, `yarn install --frozen-lockfile`, `pnpm install --frozen-lockfile`, or `bun install`
 - `{{LINT_COMMAND}}` — `npm run lint`, `yarn lint`, etc.
+
+For Python projects, also detect and set:
+- `{{INSTALL_COMMAND}}` — `pip install -r requirements.txt`, `poetry install`, `pipenv install`, `uv pip install -r requirements.txt`, etc.
+- `{{LINT_COMMAND}}` — `ruff check .`, `flake8 .`, `pylint`, etc.
 
 **If the stack has no template:**
 Generate a `.github/workflows/ci.yml` from scratch using the commands gathered in Step 2. Follow the same pipeline pattern as the templates:
@@ -108,7 +134,7 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 ---
 
-### Step 5: Scaffold Testing Infrastructure
+### Step 6: Scaffold Testing Infrastructure
 
 1. **Create test directories** using the stack's idiomatic conventions:
    - Go: `test/integration/`, `test/scenarios/`
@@ -129,7 +155,7 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 ---
 
-### Step 6: Set Up GitHub Flow
+### Step 7: Set Up GitHub Flow
 
 Run these commands via Bash:
 
@@ -138,23 +164,32 @@ Run these commands via Bash:
 git checkout main 2>/dev/null || git checkout -b main
 git checkout -b phase-1-setup
 
-# Set up branch protection on main (requires gh CLI)
-gh api repos/{owner}/{repo}/branches/main/protection \
+# Get owner/repo from git remote
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
+# Set up branch protection on main (requires gh CLI + admin access)
+gh api "repos/${REPO}/branches/main/protection" \
   --method PUT \
-  --field "required_status_checks[strict]=true" \
-  --field "required_status_checks[contexts][]=CI" \
-  --field "enforce_admins=true" \
-  --field "required_pull_request_reviews=null" \
-  --field "restrictions=null" \
-  --field "allow_force_pushes=false" \
-  --field "allow_deletions=false"
+  --input - <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["CI"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
 ```
 
 If branch protection fails (e.g., free plan, no admin access), log a warning but continue. Do NOT fail the init.
 
 ---
 
-### Step 7: Create Notion Documentation Tree
+### Step 8: Create Notion Documentation Tree
 
 **Skip this step if `notion.parent_page_id` is null.**
 
@@ -174,9 +209,11 @@ Store all page IDs in the config for later updates.
 
 ---
 
-### Step 8: Inject Testing Methodology into CLAUDE.md
+### Step 9: Inject Testing Methodology into CLAUDE.md
 
 Append the following section to the project's `CLAUDE.md` file (create it if it doesn't exist). Do NOT overwrite existing content.
+
+**Important:** First check if CLAUDE.md already contains `# Testing Requirements (AX)`. If it does, skip this step — the injection was already done (e.g., from a previous `ax:init` run).
 
 ```markdown
 
@@ -202,7 +239,7 @@ Use semantic names: `Test<Component>_<Behavior>[_<Condition>]`
 
 ---
 
-### Step 9: Write AX Config
+### Step 10: Write AX Config
 
 Write `.claude/ax/config.json` with all gathered information:
 
@@ -210,6 +247,7 @@ Write `.claude/ax/config.json` with all gathered information:
 {
   "initialized_at": "<ISO timestamp>",
   "project_name": "<from PROJECT.md>",
+  "profile": "<quality | balanced | budget — from Step 4>",
   "notion": {
     "parent_page_id": "<from Step 3 or null>",
     "doc_pages": {
@@ -243,7 +281,7 @@ Write `.claude/ax/config.json` with all gathered information:
 
 ---
 
-### Step 10: Commit Everything
+### Step 11: Commit Everything
 
 Stage and commit all new files:
 
@@ -264,6 +302,7 @@ After all steps complete, display a summary:
 
 **Project:** <name>
 **Stack:** <stack> (<version>)
+**Profile:** <quality/balanced/speed>
 **CI:** .github/workflows/ci.yml
 **Testing:** docker-compose.test.yml + TEST_GUIDE.md
 **Branch protection:** <enabled/failed>
