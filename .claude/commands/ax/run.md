@@ -35,10 +35,19 @@ Check project-local first, then fall back to global.
    - Then continue with the steps below
 
 2. Read `.claude/ax/config.json` to load project config
-3. Read `.planning/ROADMAP.md` to get all phases
-4. Determine which phases are completed (from config `phases_completed` array)
-5. Also check `.planning/phases/phase-*/` directories — if a phase has CONTEXT.md, PLAN.md, or completed execution artifacts but isn't in `phases_completed`, it's partially done. Resume from where it left off rather than restarting it.
-6. Build list of remaining/incomplete phases in order
+3. **Validate config.** Check that these required fields exist and are non-empty:
+   - `testing.unit_command` — string
+   - `testing.stack` — string
+   - `phases_completed` — array
+   If any required field is missing or malformed, display:
+   ```
+   AX config is missing required fields: {list}. Run `/ax:init` to regenerate config.
+   ```
+   And stop.
+4. Read `.planning/ROADMAP.md` to get all phases
+5. Determine which phases are completed (from config `phases_completed` array)
+6. Also check `.planning/phases/phase-*/` directories — if a phase has CONTEXT.md, PLAN.md, or completed execution artifacts but isn't in `phases_completed`, it's partially done. Resume from where it left off rather than restarting it.
+7. Build list of remaining/incomplete phases in order
 
 If config doesn't exist, tell the user to run `/ax:init` first and stop.
 If no phases remain, tell the user all phases are complete and suggest `/ax:finish`.

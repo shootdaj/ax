@@ -353,7 +353,8 @@ Write `.claude/ax/config.json` with all gathered information:
     "provider": "github-actions",
     "workflow_file": ".github/workflows/ci.yml"
   },
-  "phases_completed": []
+  "phases_completed": [],
+  "milestone_history": []
 }
 ```
 

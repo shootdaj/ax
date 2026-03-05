@@ -23,40 +23,30 @@ There is no build step, no package.json, no compiled code. The "code" is markdow
 
 ## Current State
 
-All 5 commands are implemented and working. v0.2.0 just released. Key things done:
+All 5 commands are implemented and working. All known gaps have been addressed. Key features:
 - Stack auto-detection for Go, Node, Python, Rust + any-stack fallback
 - Quality/speed preference (maps to GSD model profiles)
 - Docker compose null safety for projects without test infra
 - Thin orchestrator pattern in `/ax:run` (delegates to subagents)
 - Auto-resume for interrupted runs
 - GSD context monitor auto-disable
+- Install script (`install.sh`) with one-liner curl install, update, and uninstall
+- Brownfield/existing project support (auto-detects greenfield vs brownfield)
+- Conditional CI services (`{{#IF_SERVICES}}`) — no more hardcoded postgres/redis
+- GitHub Flow: per-phase branches with push/PR/merge
+- Auto-install all dependencies (git, gh, GSD) if missing
+- Config schema validation on every command's pre-flight
+- `/ax:status --quick` mode (file count check, no test execution)
+- Multi-milestone history tracking across `/ax:finish` cycles
 
-## Known Gaps / Future Work
+## Future Ideas
 
-These are the main areas that need attention:
+These are lower-priority improvements, not blocking usage:
 
-### 1. Install Script
-Currently install is manual `cp` commands. Should have a proper install script (`install.sh`) or an npx-based installer. The README shows the manual steps — automate them.
-
-### 2. Uninstall / Update
-No way to update AX after install. No uninstall command. Need at minimum:
-- `ax-update.sh` that pulls latest and re-copies
-- Or version check that warns when outdated
-
-### 3. Real-World Testing
-The commands have never been run end-to-end on a real project. The first priority should be **dogfooding** — use `/ax:init` and `/ax:run` on a small test project and fix whatever breaks.
-
-### 4. CI Template Flexibility
-All 4 CI templates hardcode postgres + redis services in integration/scenario jobs. Projects that don't use those services get unnecessary CI config. The templates should be conditional or the init step should strip unused services.
-
-### 5. Status Command Performance
-`/ax:status` runs the full test pyramid which can be slow. Should have a `--quick` mode that only checks test file existence and last CI run, skipping actual test execution.
-
-### 6. Config Schema Validation
-No validation on `config.json`. If a field is missing or malformed, commands will fail with confusing errors. Should validate config shape at the start of each command.
-
-### 7. Multi-Milestone Support
-Currently only tracks one milestone. `phases_completed` resets on new milestone but there's no history. Could track milestone history for progress reporting.
+- **Version pinning** — Track which AX version was used to init a project; warn on version mismatch
+- **Partial re-init** — Allow re-running just CI or just Notion setup without full re-init
+- **Custom CI providers** — Support GitLab CI, CircleCI, etc. beyond GitHub Actions
+- **Test coverage tracking** — Parse coverage reports and track coverage % across phases
 
 ## Development Workflow
 
@@ -70,4 +60,5 @@ Currently only tracks one milestone. `phases_completed` resets on new milestone 
 - All config field access uses the pattern `config.X.Y` in instructions
 - GSD skills are invoked via `Skill` tool with `skill_name: "gsd:X"`
 - Docker compose usage must always check for null `docker_compose_file`
-- Python CI template uses `{{INSTALL_COMMAND}}` and `{{LINT_COMMAND}}` placeholders (other templates may still need similar treatment)
+- All CI templates use `{{INSTALL_COMMAND}}`, `{{LINT_COMMAND}}`, and `{{#IF_SERVICES}}` conditionals
+- Config must include `milestone_history` array (added in v0.3.0) for multi-milestone tracking

@@ -10,8 +10,19 @@ Read, Write, Bash, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
 ## Pre-flight
 
 1. Read `.claude/ax/config.json` to load project config
-2. Read `.planning/ROADMAP.md` and `PROJECT.md` to understand milestone scope
-3. Parse version from `$ARGUMENTS` (default: `v1.0`)
+2. **Validate config.** Check that these required fields exist and are non-empty:
+   - `testing.unit_command` — string
+   - `testing.stack` — string
+   - `phases_completed` — array
+   If `notion.parent_page_id` is set (not null), also check:
+   - `notion.doc_pages` — object with at least `phase_reports` key
+   If any required field is missing or malformed, display:
+   ```
+   AX config is missing required fields: {list}. Run `/ax:init` to regenerate config.
+   ```
+   And stop.
+3. Read `.planning/ROADMAP.md` and `PROJECT.md` to understand milestone scope
+4. Parse version from `$ARGUMENTS` (default: `v1.0`)
 
 If config doesn't exist, tell the user to run `/ax:init` first and stop.
 
@@ -102,7 +113,35 @@ docker compose -f {config.testing.docker_compose_file} up -d --wait && \
 
 ---
 
-### Step 6: Display Summary
+### Step 6: Archive Milestone to History
+
+Append the completed milestone to the `milestone_history` array in `.claude/ax/config.json`, then reset `phases_completed` for the next milestone:
+
+```json
+{
+  "milestone_history": [
+    ...existing_entries,
+    {
+      "version": "{version}",
+      "project_name": "{config.project_name}",
+      "phases_completed": [... copy of current phases_completed],
+      "completed_at": "<ISO timestamp>",
+      "test_results": {
+        "unit": { "passed": X, "failed": Y },
+        "integration": { "passed": X, "failed": Y },
+        "scenario": { "passed": X, "failed": Y }
+      }
+    }
+  ],
+  "phases_completed": []
+}
+```
+
+This preserves history across milestones so `/ax:status` can report on past work, while resetting `phases_completed` so the next milestone starts fresh.
+
+---
+
+### Step 7: Display Summary
 
 ```
 ## Milestone Complete: {version}

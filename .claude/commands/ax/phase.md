@@ -18,9 +18,20 @@ Check project-local first, then fall back to global.
 ## Pre-flight
 
 1. Read `.claude/ax/config.json` to load project config (stack, test commands, Notion page IDs)
-2. Read `.planning/ROADMAP.md` to get phase details
-3. Parse phase number from arguments: `$ARGUMENTS`
-4. If no phase number provided, read ROADMAP.md to find the next unstarted phase
+2. **Validate config.** Check that these required fields exist and are non-empty:
+   - `testing.unit_command` — string
+   - `testing.stack` — string
+   - `phases_completed` — array
+   If `notion.parent_page_id` is set (not null), also check:
+   - `notion.doc_pages` — object with at least `phase_reports` key
+   If any required field is missing or malformed, display:
+   ```
+   AX config is missing required fields: {list}. Run `/ax:init` to regenerate config.
+   ```
+   And stop.
+3. Read `.planning/ROADMAP.md` to get phase details
+4. Parse phase number from arguments: `$ARGUMENTS`
+5. If no phase number provided, read ROADMAP.md to find the next unstarted phase
 
 If config doesn't exist, tell the user to run `/ax:init` first and stop.
 
