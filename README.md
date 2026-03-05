@@ -14,7 +14,7 @@ AX wraps GSD's planning and execution engine with:
 
 | Command | What it does |
 |---|---|
-| `/ax:init` | One-time project setup: GSD init + CI + testing + Notion + branch protection |
+| `/ax:init` | Project setup (new or existing): GSD init + CI + testing + Notion + branch protection |
 | `/ax:phase N` | Run a single phase end-to-end: plan → execute → test → verify → document |
 | `/ax:run` | Autopilot: run all remaining phases, then finish the milestone |
 | `/ax:finish [version]` | Complete milestone: audit → gaps → tag → final docs |
@@ -53,7 +53,7 @@ rm -rf ~/.claude/commands/ax ~/.claude/ax
 
 ### Usage
 
-Open Claude Code in any project and run `/ax:init`.
+Open Claude Code in any project and run `/ax:init`. Works for both new and existing projects — AX auto-detects which mode to use and preserves existing CI, tests, and config.
 
 ## Design Principles
 

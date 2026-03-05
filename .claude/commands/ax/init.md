@@ -1,6 +1,6 @@
 # /ax:init — Full Project Setup
 
-You are the AX init orchestrator. You set up everything for a new project: GSD project initialization, CI scaffolding, testing infrastructure, GitHub Flow, and Notion documentation.
+You are the AX init orchestrator. You set up AX for a project: GSD initialization, CI scaffolding, testing infrastructure, GitHub Flow, and Notion documentation. Works for both new and existing projects.
 
 ## Allowed Tools
 Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
@@ -19,35 +19,57 @@ When the instructions say "read from `.claude/ax/references/...`", check the pro
 
 ---
 
-### Step 0: Disable GSD Context Monitor
+### Step 0: Pre-flight — Detect Project Mode & Disable Context Monitor
 
-GSD installs a PostToolUse hook that injects context window warnings into the conversation. This is unnecessary (Claude Code has auto-compact) and interferes with autonomous operation. Disable it:
-
+**Disable GSD context monitor:**
 ```bash
 node ~/.claude/ax/disable-context-monitor.js
 ```
 
-This is idempotent — safe to run even if already disabled.
+**Detect whether this is a greenfield or brownfield project.** Check these signals:
+
+| Signal | Greenfield | Brownfield |
+|--------|-----------|------------|
+| Git commit count | 0-1 (initial commit only) | 2+ |
+| Source code files | None or boilerplate only | Substantial code exists |
+| `PROJECT.md` or `.planning/` | Does not exist | May exist (previous GSD use) |
+| `.claude/ax/config.json` | Does not exist | May exist (previous AX init) |
+
+**Set `MODE` to `greenfield` or `brownfield`.** If `.claude/ax/config.json` already exists, this is a re-init — ask the user:
+
+> "AX is already initialized for this project. Do you want to re-initialize (overwrites config) or add a new milestone to the existing setup?"
+
+If they say "new milestone", run `/gsd:new-milestone` via the Skill tool and stop — no need to redo CI, testing, or Notion setup. If they say "re-initialize", continue with brownfield mode.
 
 ---
 
-### Step 1: Run GSD New Project
+### Step 1: Run GSD Project Setup
 
-Run `/gsd:new-project` via the Skill tool. This will interactively question the user to understand the project, then run research, requirements gathering, and roadmap creation.
-
-Wait for this to complete fully before proceeding. The output includes:
+**Greenfield:** Run `/gsd:new-project` via the Skill tool. This interactively questions the user, runs research, and creates:
 - `PROJECT.md` — project definition
 - `.planning/REQUIREMENTS.md` — requirements
 - `.planning/ROADMAP.md` — phased roadmap
+
+**Brownfield:** Run `/gsd:new-milestone` via the Skill tool. This questions the user about what they want to build next, then creates:
+- Updated `PROJECT.md` — with new milestone goals appended
+- `.planning/REQUIREMENTS.md` — requirements for this milestone
+- `.planning/ROADMAP.md` — phased roadmap (continues phase numbering if previous phases exist)
+
+Wait for either command to complete fully before proceeding.
 
 ---
 
 ### Step 2: Detect Stack
 
 Examine the project to determine the tech stack. Check these sources in order:
-1. Files from GSD output: `PROJECT.md`, `.planning/research/` files
-2. Project files: `go.mod`, `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `build.gradle`, `pom.xml`, `mix.exs`, `Package.swift`, etc.
+1. **Existing project files** (most reliable for brownfield): `go.mod`, `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `build.gradle`, `pom.xml`, `mix.exs`, `Package.swift`, etc.
+2. Files from GSD output: `PROJECT.md`, `.planning/research/` files
 3. If still unclear, check ROADMAP.md for technology mentions
+
+**For brownfield projects**, also check:
+- Existing test infrastructure: look for `test/`, `tests/`, `spec/`, `__tests__/` directories and infer the test framework from existing test files
+- Existing CI: check `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `.circleci/`, etc.
+- Existing lint/build config: `.eslintrc*`, `ruff.toml`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `.golangci.yml`, etc.
 
 **If a known template stack is detected** (`go`, `node`, `python`, `rust`):
 - Set `stack` to the detected value
@@ -107,9 +129,12 @@ Store the choice in config as `"profile"`.
 
 ### Step 5: Scaffold CI
 
+**Skip this step if a CI workflow already exists** (`.github/workflows/ci.yml` or similar). Instead, note the existing CI file path in config and move on. If the existing CI is missing test jobs that AX needs, you may suggest additions but do NOT overwrite the file.
+
 **First, determine if the project needs external services** (postgres, redis, etc.):
 - Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue/message-broker mentions
 - Check PROJECT.md for infrastructure references
+- For brownfield projects, also check existing `docker-compose*.yml` files and source code for connection strings
 - If the project uses SQLite, file-based storage, or no database at all, it does NOT need services
 
 **If the stack has a template** (`go`, `node`, `python`, `rust`):
@@ -144,18 +169,21 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 ### Step 6: Scaffold Testing Infrastructure
 
-1. **Create test directories** using the stack's idiomatic conventions:
+**For brownfield projects:** Check what already exists before creating anything. If test directories, docker-compose.test.yml, or TEST_GUIDE.md already exist, preserve them. Only create what's missing.
+
+1. **Create test directories** (if they don't already exist) using the stack's idiomatic conventions:
    - Go: `test/integration/`, `test/scenarios/`
    - Node: `test/integration/`, `test/scenarios/`
    - Python: `tests/integration/`, `tests/scenarios/`
    - Rust: `tests/integration/`, `tests/scenarios/`
    - Other stacks: use the convention gathered in Step 2, or research the idiomatic test layout for the stack. Default to `test/integration/`, `test/scenarios/` if unclear.
+   - **For brownfield:** If the project already has test directories (e.g., `test/`, `tests/`, `spec/`), use the existing structure. Only add missing subdirectories for integration and scenario tests.
 
-2. **Create `docker-compose.test.yml`** at project root — but only if the project actually needs test infrastructure. Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue mentions. If the project is a pure CLI tool or library with no external dependencies, skip this file entirely and set `docker_compose_file` to `null` in config.
+2. **Create `docker-compose.test.yml`** at project root (if it doesn't already exist) — but only if the project actually needs test infrastructure. Check ROADMAP.md and REQUIREMENTS.md for database/cache/queue mentions. If the project is a pure CLI tool or library with no external dependencies, skip this file entirely and set `docker_compose_file` to `null` in config.
 
-3. **Create `TEST_GUIDE.md`** at project root using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced using values from Step 2. **If `docker_compose_file` is null**, remove all `docker compose` lines from the generated TEST_GUIDE.md (the `# Start test infrastructure`, `# Stop test infrastructure` blocks, and the docker compose lines in the full pyramid command). The integration and scenario test commands should appear standalone without docker compose wrapping.
+3. **Create `TEST_GUIDE.md`** at project root (if it doesn't already exist) using the template from `.claude/ax/references/test-guide-template.md`, with all `{{VARIABLES}}` replaced using values from Step 2. **If `docker_compose_file` is null**, remove all `docker compose` lines from the generated TEST_GUIDE.md (the `# Start test infrastructure`, `# Stop test infrastructure` blocks, and the docker compose lines in the full pyramid command). The integration and scenario test commands should appear standalone without docker compose wrapping.
 
-**Test commands** come from Step 2 — either auto-detected for known stacks or provided by the user/researched for custom stacks. Known stack defaults:
+**Test commands** come from Step 2 — either auto-detected for known stacks or provided by the user/researched for custom stacks. **For brownfield projects**, prefer existing test commands from `package.json` scripts, `Makefile`, or other project config over defaults. Known stack defaults:
 - **Go:** `go test ./internal/... ./pkg/... -v -race` (unit), `go test ./test/integration/... -v -tags integration` (integration), `go test ./test/scenarios/... -v -tags scenario` (scenario)
 - **Node:** `npx vitest run --dir src` (unit), `npx vitest run --dir test/integration` (integration), `npx vitest run --dir test/scenarios` (scenario) — adjust for jest if detected
 - **Python:** `pytest tests/unit/ -v` (unit), `pytest tests/integration/ -v -m integration` (integration), `pytest tests/scenarios/ -v -m scenario` (scenario)
@@ -165,15 +193,21 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 ### Step 7: Set Up GitHub Flow
 
+**Determine the starting phase number:**
+- **Greenfield:** Phase 1
+- **Brownfield:** Read ROADMAP.md to find the first phase number in this milestone (may be > 1 if continuing from a previous milestone)
+
 Run these commands via Bash:
 
 ```bash
 # Ensure we're on main (rename master→main if needed)
 git checkout main 2>/dev/null || (git checkout master 2>/dev/null && git branch -m master main) || git checkout -b main
-git checkout -b phase-1-setup
+git checkout -b phase-{N}-setup
 ```
 
-Then set up branch protection (requires GitHub remote, `gh` CLI, and admin access):
+Where `{N}` is the starting phase number determined above.
+
+Then set up branch protection (requires GitHub remote, `gh` CLI, and admin access). **Skip if branch protection is already configured:**
 
 ```bash
 # Get owner/repo from git remote
@@ -219,6 +253,8 @@ Pages to create (use content from `.claude/ax/references/notion-templates/`):
 7. **Dev Workflow** — from `dev-workflow.md`
 8. **Phase Reports** — from `phase-report.md` (this becomes the parent for individual phase report pages)
 
+**For brownfield projects with Notion:** If this is a re-init and Notion pages already exist, update the existing pages instead of creating new ones.
+
 Store all page IDs in the config for later updates.
 
 ---
@@ -261,6 +297,7 @@ Write `.claude/ax/config.json` with all gathered information:
 {
   "initialized_at": "<ISO timestamp>",
   "project_name": "<from PROJECT.md>",
+  "mode": "<greenfield | brownfield>",
   "profile": "<quality | balanced | budget — from Step 4>",
   "notion": {
     "parent_page_id": "<from Step 3 or null>",
@@ -280,10 +317,10 @@ Write `.claude/ax/config.json` with all gathered information:
     "stack": "<detected stack>",
     "language_version": "<detected version>",
     "test_framework": "<detected framework>",
-    "unit_command": "<from Step 5>",
-    "integration_command": "<from Step 5>",
-    "scenario_command": "<from Step 5>",
-    "docker_compose_file": "docker-compose.test.yml"
+    "unit_command": "<from Step 6>",
+    "integration_command": "<from Step 6>",
+    "scenario_command": "<from Step 6>",
+    "docker_compose_file": "docker-compose.test.yml or null"
   },
   "ci": {
     "provider": "github-actions",
@@ -297,10 +334,11 @@ Write `.claude/ax/config.json` with all gathered information:
 
 ### Step 11: Commit Everything
 
-Stage and commit all new files:
+Stage and commit all new/modified files:
 
 ```bash
-git add .claude/ax/ .github/workflows/ci.yml docker-compose.test.yml TEST_GUIDE.md CLAUDE.md
+git add .claude/ax/ .github/workflows/ci.yml TEST_GUIDE.md CLAUDE.md
+git add docker-compose.test.yml 2>/dev/null  # May not exist
 git add test/ tests/ 2>/dev/null  # May not exist for all stacks
 git commit -m "chore: AX init — CI, testing infrastructure, Notion docs, branch protection"
 ```
@@ -315,13 +353,14 @@ After all steps complete, display a summary:
 ## AX Init Complete
 
 **Project:** <name>
+**Mode:** <greenfield / brownfield>
 **Stack:** <stack> (<version>)
 **Profile:** <quality/balanced/speed>
-**CI:** .github/workflows/ci.yml
-**Testing:** docker-compose.test.yml + TEST_GUIDE.md
-**Branch protection:** <enabled/failed>
+**CI:** .github/workflows/ci.yml <created / existing>
+**Testing:** <docker-compose.test.yml + TEST_GUIDE.md / TEST_GUIDE.md only>
+**Branch protection:** <enabled/failed/skipped>
 **Notion docs:** <8 pages created / skipped>
 **Config:** .claude/ax/config.json
 
-Next: Run `/ax:phase 1` to start the first phase.
+Next: Run `/ax:phase {N}` to start the first phase.
 ```
