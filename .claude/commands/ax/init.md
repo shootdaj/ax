@@ -193,19 +193,12 @@ Write the generated CI file and note `"ci_generated": true` in config.
 
 ### Step 7: Set Up GitHub Flow
 
-**Determine the starting phase number:**
-- **Greenfield:** Phase 1
-- **Brownfield:** Read ROADMAP.md to find the first phase number in this milestone (may be > 1 if continuing from a previous milestone)
-
-Run these commands via Bash:
+Init stays on `main` — phase branches are created by `/ax:phase`. Init only ensures `main` exists and configures branch protection.
 
 ```bash
 # Ensure we're on main (rename master→main if needed)
 git checkout main 2>/dev/null || (git checkout master 2>/dev/null && git branch -m master main) || git checkout -b main
-git checkout -b phase-{N}-setup
 ```
-
-Where `{N}` is the starting phase number determined above.
 
 Then set up branch protection (requires GitHub remote, `gh` CLI, and admin access). **Skip if branch protection is already configured:**
 
@@ -332,16 +325,19 @@ Write `.claude/ax/config.json` with all gathered information:
 
 ---
 
-### Step 11: Commit Everything
+### Step 11: Commit and Push Init to Main
 
-Stage and commit all new/modified files:
+Stage and commit all new/modified files on `main`, then push:
 
 ```bash
 git add .claude/ax/ .github/workflows/ci.yml TEST_GUIDE.md CLAUDE.md
 git add docker-compose.test.yml 2>/dev/null  # May not exist
 git add test/ tests/ 2>/dev/null  # May not exist for all stacks
 git commit -m "chore: AX init — CI, testing infrastructure, Notion docs, branch protection"
+git push origin main 2>/dev/null || true
 ```
+
+This ensures the init scaffolding is on `main` before any phase branches are created.
 
 ---
 

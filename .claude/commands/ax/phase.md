@@ -28,7 +28,27 @@ If config doesn't exist, tell the user to run `/ax:init` first and stop.
 
 ## Execution Steps
 
-### Step 1: Discuss Phase (gather context)
+### Step 1: Create Phase Branch
+
+Create a dedicated branch for this phase's work. Each phase gets its own branch off `main`.
+
+```bash
+# Ensure main is up to date
+git checkout main
+git pull origin main 2>/dev/null || true
+
+# Create phase branch
+git checkout -b phase-{N}
+```
+
+**If `phase-{N}` branch already exists** (resuming an interrupted phase), check it out instead:
+```bash
+git checkout phase-{N}
+```
+
+---
+
+### Step 2: Discuss Phase (gather context)
 
 Check if `.planning/phases/phase-{N}/CONTEXT.md` exists.
 
@@ -42,7 +62,7 @@ When GSD asks questions or presents checkpoints during discussion:
 
 ---
 
-### Step 2: Inject Testing Requirements into CONTEXT.md
+### Step 3: Inject Testing Requirements into CONTEXT.md
 
 After CONTEXT.md exists, append testing requirements to it:
 
@@ -61,18 +81,18 @@ Reference: TEST_GUIDE.md for requirement mapping, .claude/ax/references/testing-
 
 ---
 
-### Step 3: Plan Phase
+### Step 4: Plan Phase
 
 Run `/gsd:plan-phase $ARGUMENTS` via the Skill tool. This will:
 - Research how to implement the phase
 - Create a detailed plan (PLAN.md)
 - Verify plan quality via plan-checker
 
-When GSD asks questions during planning, auto-resolve with sensible defaults (same checkpoint strategy as Step 1).
+When GSD asks questions during planning, auto-resolve with sensible defaults (same checkpoint strategy as Step 2).
 
 ---
 
-### Step 4: Validate Test Coverage in Plans
+### Step 5: Validate Test Coverage in Plans
 
 Read all `PLAN.md` files in `.planning/phases/phase-{N}/`. Check that they include test tasks:
 - At least one unit test task per new component
@@ -86,16 +106,15 @@ If tests are missing from plans, **edit the PLAN.md files** to add test tasks at
 
 ---
 
-### Step 5: Execute Phase
+### Step 6: Execute Phase
 
 Run `/gsd:execute-phase $ARGUMENTS` via the Skill tool. This spawns executor agents that:
 - Implement the code in atomic commits
-- Follow the plans created in Step 3
-- Create a phase branch if one doesn't exist
+- Follow the plans created in Step 4
 
 ---
 
-### Step 6: Run Test Pyramid
+### Step 7: Run Test Pyramid
 
 Read test commands from config. Execute in order:
 
@@ -121,12 +140,12 @@ If unit tests fail, still run integration and scenario tests to get the full pic
 
 ---
 
-### Step 7: Generate Phase Report
+### Step 8: Generate Phase Report
 
 Create a phase report by reading the phase-report template from `.claude/ax/references/notion-templates/phase-report.md` and filling in:
 - Phase number and title from ROADMAP.md
 - Requirements delivered (from PLAN.md and VERIFICATION.md if available)
-- Test results from Step 6
+- Test results from Step 7
 - New tests added (from git diff of test files)
 - Architecture changes (from git diff of non-test files)
 
@@ -134,15 +153,15 @@ Write the report to `.planning/phases/phase-{N}/PHASE_REPORT.md`.
 
 ---
 
-### Step 8: Verify Work
+### Step 9: Verify Work
 
 Run `/gsd:verify-work $ARGUMENTS` via the Skill tool. This does goal-backward verification — checking that what was built actually achieves the phase goal.
 
 ---
 
-### Step 9: Handle Failures
+### Step 10: Handle Failures
 
-Check results from Steps 6 and 8:
+Check results from Steps 7 and 9:
 
 **If tests failed OR verification found gaps:**
 
@@ -152,16 +171,16 @@ Check results from Steps 6 and 8:
    - For verification gaps: create tasks to implement missing functionality
    - Write these tasks into a new plan file: `.planning/phases/phase-{N}/PLAN-gaps.md`
 3. Run `/gsd:execute-phase $ARGUMENTS` via Skill tool. The executor will pick up the new gap plan and execute the fix tasks.
-4. Re-run the test pyramid (repeat Step 6)
+4. Re-run the test pyramid (repeat Step 7)
 5. Update the phase report with gap closure results
 
 **If gap closure also fails:** Stop and display the failures. Do NOT loop infinitely. Report what succeeded and what remains broken.
 
-**If everything passed:** Continue to Step 10.
+**If everything passed:** Continue to Step 11.
 
 ---
 
-### Step 10: Update Notion Documentation
+### Step 11: Update Notion Documentation
 
 **Skip if Notion is not configured (parent_page_id is null).**
 
@@ -181,7 +200,7 @@ Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The ag
 
 ---
 
-### Step 11: Update TEST_GUIDE.md
+### Step 12: Update TEST_GUIDE.md
 
 Update the project's `TEST_GUIDE.md`:
 1. Add new entries to the "Requirement → Test Mapping" table
@@ -189,7 +208,59 @@ Update the project's `TEST_GUIDE.md`:
 
 ---
 
-### Step 12: Display Summary
+### Step 13: Push Branch and Merge to Main
+
+Complete the GitHub Flow cycle for this phase:
+
+```bash
+# Push the phase branch
+git push -u origin phase-{N}
+
+# Create a PR
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
+if [ -n "$REPO" ]; then
+  gh pr create \
+    --title "Phase {N}: {Title}" \
+    --body "## Phase {N}: {Title}
+
+Automated phase completion via AX.
+
+### Test Results
+{summary from Step 7}
+
+### Changes
+{summary of what was built}
+" \
+    --base main \
+    --head phase-{N}
+fi
+```
+
+Then merge the PR:
+```bash
+# Merge (use merge commit to preserve phase history)
+gh pr merge --merge --delete-branch
+
+# Update local main
+git checkout main
+git pull origin main
+```
+
+**If `gh` is not available or no remote exists:** Just merge locally:
+```bash
+git checkout main
+git merge phase-{N}
+git push origin main 2>/dev/null || true
+git branch -d phase-{N}
+```
+
+**If branch protection blocks direct merge** (requires PR reviews): Push the branch and create the PR, but do NOT merge. Tell the user:
+
+> "Phase {N} branch pushed and PR created. Merge requires review — approve the PR to continue."
+
+---
+
+### Step 14: Display Summary
 
 ```
 ## Phase {N} Complete: {Title}
@@ -213,6 +284,10 @@ Update the project's `TEST_GUIDE.md`:
 - API Reference ✓
 - Component Index ✓
 - Phase Report created ✓
+
+### Git
+- Branch: phase-{N} → merged to main
+- PR: #{PR_NUMBER}
 
 Next: Run `/ax:phase {N+1}` or `/ax:run` for autopilot.
 ```
