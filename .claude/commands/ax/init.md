@@ -19,7 +19,41 @@ When the instructions say "read from `.claude/ax/references/...`", check the pro
 
 ---
 
-### Step 0: Pre-flight — Detect Project Mode & Disable Context Monitor
+### Step 0: Pre-flight — Install Dependencies, Detect Project Mode
+
+**Install all required dependencies if missing.** Check each and install as needed:
+
+```bash
+# git — should already be present, but verify
+command -v git || { echo "ERROR: git is required. Install it first."; exit 1; }
+
+# gh (GitHub CLI) — required for PRs and branch protection
+command -v gh || {
+  # macOS
+  if command -v brew &>/dev/null; then
+    brew install gh
+  # Linux (Debian/Ubuntu)
+  elif [ -f /etc/debian_version ]; then
+    (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) && \
+      sudo mkdir -p /etc/apt/keyrings && \
+      wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+      sudo apt update && sudo apt install gh -y
+  fi
+}
+
+# Verify gh auth
+gh auth status &>/dev/null || gh auth login
+
+# GSD — required for planning and execution
+[ -d ~/.claude/commands/gsd ] || {
+  echo "Installing GSD..."
+  npx get-shit-done-cc --claude --global
+}
+
+# docker (optional — only needed if project uses test infrastructure)
+# Don't fail if missing; will be checked in Step 6 if needed
+```
 
 **Disable GSD context monitor:**
 ```bash
@@ -200,7 +234,7 @@ Init stays on `main` — phase branches are created by `/ax:phase`. Init only en
 git checkout main 2>/dev/null || (git checkout master 2>/dev/null && git branch -m master main) || git checkout -b main
 ```
 
-Then set up branch protection (requires GitHub remote, `gh` CLI, and admin access). **Skip if branch protection is already configured:**
+Then set up branch protection (gh was installed in Step 0). **Skip if branch protection is already configured:**
 
 ```bash
 # Get owner/repo from git remote

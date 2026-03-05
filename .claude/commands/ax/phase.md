@@ -246,13 +246,22 @@ git checkout main
 git pull origin main
 ```
 
-**If `gh` is not available or no remote exists:** Just merge locally:
+**If `gh` is not installed** (should have been installed by `/ax:init`, but verify):
 ```bash
-git checkout main
-git merge phase-{N}
-git push origin main 2>/dev/null || true
-git branch -d phase-{N}
+command -v gh || {
+  if command -v brew &>/dev/null; then brew install gh
+  elif [ -f /etc/debian_version ]; then
+    (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) && \
+      sudo mkdir -p /etc/apt/keyrings && \
+      wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+      sudo apt update && sudo apt install gh -y
+  fi
+}
+gh auth status &>/dev/null || gh auth login
 ```
+
+Do NOT skip `gh` — it is required for GitHub Flow.
 
 **If branch protection blocks direct merge** (requires PR reviews): Push the branch and create the PR, but do NOT merge. Tell the user:
 
