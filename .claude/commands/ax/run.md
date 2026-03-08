@@ -25,10 +25,11 @@ Check project-local first, then fall back to global.
 
 ## Pre-flight
 
-0. **Disable GSD context monitor** (in case GSD was updated since last run):
+0. **Disable GSD context monitor and record start time:**
    ```bash
    node ~/.claude/ax/disable-context-monitor.js
    ```
+   Update `last_commands.run` in `.claude/ax/config.json` to the current ISO timestamp.
 
 1. **Check for paused work first.** Look for `.planning/STATE.md` or any GSD pause/handoff artifacts. If found:
    - Run `/gsd:resume-work` via the Skill tool automatically
@@ -45,7 +46,7 @@ Check project-local first, then fall back to global.
    ```
    And stop.
 4. Read `.planning/ROADMAP.md` to get all phases
-5. Determine which phases are completed (from config `phases_completed` array)
+5. Determine which phases are completed (from config `phases_completed` array — each entry is an object with `.phase`, `.title`, `.started_at`, `.completed_at`; use the `.phase` field to match phase numbers)
 6. Also check `.planning/phases/phase-*/` directories — if a phase has CONTEXT.md, PLAN.md, or completed execution artifacts but isn't in `phases_completed`, it's partially done. Resume from where it left off rather than restarting it.
 7. Build list of remaining/incomplete phases in order
 

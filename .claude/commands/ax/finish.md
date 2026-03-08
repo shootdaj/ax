@@ -23,6 +23,7 @@ Read, Write, Bash, Agent, AskUserQuestion, Skill, mcp__claude_ai_Notion__*
    And stop.
 3. Read `.planning/ROADMAP.md` and `PROJECT.md` to understand milestone scope
 4. Parse version from `$ARGUMENTS` (default: `v1.0`)
+5. Update `last_commands.finish` in config to current ISO timestamp
 
 If config doesn't exist, tell the user to run `/ax:init` first and stop.
 

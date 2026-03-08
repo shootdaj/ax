@@ -41,6 +41,8 @@ If config doesn't exist, tell the user to run `/ax:init` first and stop.
 
 ### Step 1: Create Phase Branch
 
+**Record the phase start time** — store the current ISO timestamp (e.g., `2026-03-09T14:30:00Z`) as `PHASE_START_TIME`. This will be written to config when the phase completes.
+
 Create a dedicated branch for this phase's work. Each phase gets its own branch off `main`.
 
 ```bash
@@ -206,8 +208,17 @@ Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The ag
    - Use the content from `.planning/phases/phase-{N}/PHASE_REPORT.md`
 
 4. Update `.claude/ax/config.json`:
-   - Add phase number to `phases_completed` array
+   - Append a phase record to `phases_completed`:
+     ```json
+     {
+       "phase": N,
+       "title": "{phase title from ROADMAP.md}",
+       "started_at": "<ISO timestamp from Step 1 branch creation>",
+       "completed_at": "<ISO timestamp — now>"
+     }
+     ```
    - Update `notion.last_updated` timestamp
+   - Update `last_commands.phase` to current ISO timestamp
 
 ---
 

@@ -1,11 +1,11 @@
 # /ax:status — Quick Project Overview
 
-You are the AX status reporter. You show a quick overview of project health: progress, tests, CI, and documentation.
+You are the AX status reporter. You show a quick overview of project health: progress, tests, CI, documentation, and a full activity timeline.
 
 **Arguments:** `$ARGUMENTS` may contain `quick` or `--quick` to run in fast mode (skip test execution).
 
 ## Allowed Tools
-Read, Bash, Glob, Grep, Skill
+Read, Write, Bash, Glob, Grep, Skill
 
 ## Pre-flight
 
@@ -27,6 +27,8 @@ AX config is missing required fields: {list}. Run `/ax:init` to regenerate confi
 And stop.
 
 **Parse mode:** If `$ARGUMENTS` contains `quick` or `--quick`, set `QUICK_MODE = true`. Otherwise `QUICK_MODE = false`.
+
+**Update `last_commands.status`** in `.claude/ax/config.json` to the current ISO timestamp.
 
 ---
 
@@ -87,7 +89,25 @@ Read `notion.last_updated` from config:
 
 Also check `phases_completed` array to see which phases have updated docs.
 
-### 5. Milestone History (if available)
+### 5. Activity Timeline
+
+Build a chronological timeline from config timestamps. Collect these data points:
+
+- `initialized_at` — when the project was initialized
+- `last_commands.init` — last init run
+- `last_commands.phase` — last phase command run
+- `last_commands.run` — last autopilot run
+- `last_commands.finish` — last milestone finish
+- `last_commands.status` — last status check (this run)
+- Each entry in `phases_completed[]`:
+  - `.started_at` — when this phase started
+  - `.completed_at` — when this phase completed
+- Each entry in `milestone_history[]`:
+  - `.completed_at` — when this milestone was finished
+
+Sort all non-null timestamps chronologically. This gives the user a clear picture of **when** everything happened.
+
+### 6. Milestone History (if available)
 
 Read `milestone_history` from config:
 - If the array exists and has entries, show a brief history of completed milestones
@@ -106,9 +126,9 @@ Read `milestone_history` from config:
 ### Test Health
 | Tier        | Status  | Passed | Failed |
 |-------------|---------|--------|--------|
-| Unit        | ✓ / ✗ / — |  X   |   X    |
-| Integration | ✓ / ✗ / — |  X   |   X    |
-| Scenario    | ✓ / ✗ / — |  X   |   X    |
+| Unit        | pass/fail/-- |  X   |   X    |
+| Integration | pass/fail/-- |  X   |   X    |
+| Scenario    | pass/fail/-- |  X   |   X    |
 
 {In quick mode, show file counts instead of pass/fail:}
 | Tier        | Test Files |
@@ -122,6 +142,26 @@ Read `milestone_history` from config:
 |-------------|-----------|--------------|
 | {branch}    | {status}  | {timestamp}  |
 
+### Activity Timeline
+| When                 | Event                              |
+|----------------------|------------------------------------|
+| 2026-03-07 09:15 AM  | Project initialized (greenfield)   |
+| 2026-03-07 10:30 AM  | Phase 1: Core API — started        |
+| 2026-03-07 02:45 PM  | Phase 1: Core API — completed      |
+| 2026-03-08 09:00 AM  | Phase 2: Auth System — started     |
+| 2026-03-08 01:15 PM  | Phase 2: Auth System — completed   |
+| 2026-03-09 11:00 AM  | /ax:status ran                     |
+
+{Show human-readable dates (local timezone). Include phase titles from the phases_completed objects. Omit null entries.}
+
+### Phase Details
+| Phase | Title        | Started              | Completed            | Duration |
+|-------|-------------|----------------------|----------------------|----------|
+| 1     | Core API    | Mar 7, 10:30 AM      | Mar 7, 2:45 PM       | 4h 15m   |
+| 2     | Auth System | Mar 8, 9:00 AM       | Mar 8, 1:15 PM       | 4h 15m   |
+
+{Calculate duration from started_at to completed_at for each phase. If a phase has started_at but no completed_at, show "In progress" for duration.}
+
 ### Documentation
 - Notion: {configured/not configured}
 - Last updated: {timestamp or "never"}
@@ -129,9 +169,9 @@ Read `milestone_history` from config:
 
 ### Milestone History
 {If milestone_history exists:}
-| Milestone | Version | Phases | Completed    |
-|-----------|---------|--------|--------------|
-| {name}    | {ver}   | {N}    | {date}       |
+| Milestone | Version | Phases | Completed            |
+|-----------|---------|--------|----------------------|
+| {name}    | {ver}   | {N}    | {date and time}      |
 {Otherwise omit this section}
 
 ### Quick Actions
@@ -145,6 +185,7 @@ Read `milestone_history` from config:
 ## Key Behaviors
 
 - **Fast:** Don't run lengthy operations. If tests take more than 60 seconds, use timeout and report "timed out"
-- **Non-destructive:** Only read operations, never modify anything
+- **Non-destructive:** Only reads config — the only write is updating `last_commands.status`
 - **Graceful degradation:** If any check fails (gh not installed, docker not running, etc.), report the failure and continue with other checks
 - **Quick mode:** When `--quick` is passed, the entire command should complete in seconds — no test execution, no docker compose, just file checks and API calls
+- **Timestamps:** All timestamps displayed in human-readable local timezone format (e.g., "Mar 7, 2:45 PM" or "2026-03-07 14:45"). Use relative time (e.g., "2 hours ago") for recent events if it aids readability.

@@ -354,7 +354,14 @@ Write `.claude/ax/config.json` with all gathered information:
     "workflow_file": ".github/workflows/ci.yml"
   },
   "phases_completed": [],
-  "milestone_history": []
+  "milestone_history": [],
+  "last_commands": {
+    "init": "<ISO timestamp — now>",
+    "phase": null,
+    "run": null,
+    "finish": null,
+    "status": null
+  }
 }
 ```
 
