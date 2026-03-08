@@ -10,9 +10,11 @@ Everything lives under `.claude/`:
 - **`.claude/commands/ax/*.md`** — the 5 slash commands (the core product)
 - **`.claude/ax/references/`** — templates and CI configs consumed by the commands
 - **`.claude/ax/disable-context-monitor.js`** — utility script
+- **`test/`** — test suite (84 tests, `node --test test/*.test.js`)
+- **`install.sh`** — one-liner installer
 - **`README.md`** — user-facing docs
 
-There is no build step, no package.json, no compiled code. The "code" is markdown instructions + YAML templates + one small JS utility.
+There is no build step, no package.json, no compiled code. The "code" is markdown instructions + YAML templates + one small JS utility. Tests use Node.js built-in test runner (no dependencies).
 
 ## How It Works
 
@@ -51,8 +53,9 @@ These are lower-priority improvements, not blocking usage:
 ## Development Workflow
 
 1. Edit files in this repo
-2. Test by copying to `~/.claude/commands/ax/` and `~/.claude/ax/` and running in a test project
-3. Commit and push to `shootdaj/ax`
+2. Run tests: `node --test test/*.test.js`
+3. Test by copying to `~/.claude/commands/ax/` and `~/.claude/ax/` and running in a test project
+4. Commit and push to `shootdaj/ax`
 
 ## Key Conventions
 
