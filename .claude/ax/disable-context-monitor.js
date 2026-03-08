@@ -18,7 +18,7 @@ if (!settings.hooks || !settings.hooks.PostToolUse) {
   process.exit(0);
 }
 
-const before = settings.hooks.PostToolUse.length;
+const before = JSON.stringify(settings.hooks.PostToolUse);
 
 // Filter out any hook entries that contain gsd-context-monitor
 settings.hooks.PostToolUse = settings.hooks.PostToolUse.map(entry => {
@@ -29,7 +29,7 @@ settings.hooks.PostToolUse = settings.hooks.PostToolUse.map(entry => {
   };
 }).filter(entry => entry.hooks && entry.hooks.length > 0);
 
-const after = settings.hooks.PostToolUse.length;
+const after = JSON.stringify(settings.hooks.PostToolUse);
 
 if (before !== after) {
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
