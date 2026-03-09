@@ -7,7 +7,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const TEMPLATES_DIR = path.join(ROOT, '.claude', 'ax', 'references', 'ci-templates');
+// Support both plugin layout and legacy layout
+const TEMPLATES_DIR = fs.existsSync(path.join(ROOT, 'references', 'ci-templates'))
+  ? path.join(ROOT, 'references', 'ci-templates')
+  : path.join(ROOT, '.claude', 'ax', 'references', 'ci-templates');
 
 const TEMPLATES = {
   node: {

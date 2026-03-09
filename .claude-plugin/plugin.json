@@ -1,0 +1,13 @@
+{
+  "name": "ax",
+  "version": "1.0.0",
+  "description": "Full project lifecycle — planning, CI, testing, GitHub Flow, deployment, and Notion docs. Wraps GSD with enforcement and automation.",
+  "author": {
+    "name": "shootdaj",
+    "url": "https://github.com/shootdaj"
+  },
+  "homepage": "https://github.com/shootdaj/ax",
+  "repository": "https://github.com/shootdaj/ax",
+  "license": "MIT",
+  "keywords": ["project-management", "ci-cd", "testing", "deployment", "gsd", "workflow"]
+}

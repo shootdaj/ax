@@ -11,11 +11,12 @@ Execute these steps in order. Do NOT skip steps. Do NOT ask for confirmation bet
 
 ## Reference File Locations
 
-AX reference files (templates, CI configs, Notion templates) live at one of:
-- **Project-local:** `.claude/ax/references/` (takes priority)
-- **Global:** `~/.claude/ax/references/`
+AX reference files (templates, CI configs, Notion templates) live at one of (check in order):
+1. **Plugin:** `${CLAUDE_PLUGIN_ROOT}/references/` (if installed as plugin)
+2. **Project-local:** `.claude/ax/references/`
+3. **Global:** `~/.claude/ax/references/`
 
-When the instructions say "read from `.claude/ax/references/...`", check the project-local path first, then fall back to the global path.
+When the instructions say "read from references/...", check each path in order and use the first that exists.
 
 ---
 
@@ -57,7 +58,8 @@ gh auth status &>/dev/null || gh auth login
 
 **Disable GSD context monitor:**
 ```bash
-node ~/.claude/ax/disable-context-monitor.js
+# Try plugin path first, fall back to global install path
+node "${CLAUDE_PLUGIN_ROOT}/scripts/disable-context-monitor.js" 2>/dev/null || node ~/.claude/ax/disable-context-monitor.js 2>/dev/null || true
 ```
 
 **Detect whether this is a greenfield or brownfield project.** Check these signals:

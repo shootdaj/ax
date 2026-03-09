@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '{{GO_VERSION}}'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '{{GO_VERSION}}'
+      - name: Run unit tests
+        run: go test ./internal/... ./pkg/... -v -race -count=1
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    {{#IF_SERVICES}}
+    services:
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '{{GO_VERSION}}'
+      - name: Run integration tests
+        {{#IF_SERVICES}}
+        env:
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
+        run: go test ./test/integration/... -v -tags integration -count=1
+
+  scenario-tests:
+    name: Scenario Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    {{#IF_SERVICES}}
+    services:
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '{{GO_VERSION}}'
+      - name: Run scenario tests
+        {{#IF_SERVICES}}
+        env:
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
+        run: go test ./test/scenarios/... -v -tags scenario -count=1

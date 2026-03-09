@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '{{NODE_VERSION}}'
+          cache: '{{PACKAGE_MANAGER}}'
+      - name: Install dependencies
+        run: {{INSTALL_COMMAND}}
+      - name: Lint
+        run: {{LINT_COMMAND}}
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '{{NODE_VERSION}}'
+          cache: '{{PACKAGE_MANAGER}}'
+      - name: Install dependencies
+        run: {{INSTALL_COMMAND}}
+      - name: Run unit tests
+        run: {{UNIT_COMMAND}}
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    {{#IF_SERVICES}}
+    services:
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '{{NODE_VERSION}}'
+          cache: '{{PACKAGE_MANAGER}}'
+      - name: Install dependencies
+        run: {{INSTALL_COMMAND}}
+      - name: Run integration tests
+        {{#IF_SERVICES}}
+        env:
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
+        run: {{INTEGRATION_COMMAND}}
+
+  scenario-tests:
+    name: Scenario Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    {{#IF_SERVICES}}
+    services:
+      {{SERVICES_BLOCK}}
+    {{/IF_SERVICES}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '{{NODE_VERSION}}'
+          cache: '{{PACKAGE_MANAGER}}'
+      - name: Install dependencies
+        run: {{INSTALL_COMMAND}}
+      - name: Run scenario tests
+        {{#IF_SERVICES}}
+        env:
+          {{SERVICES_ENV}}
+        {{/IF_SERVICES}}
+        run: {{SCENARIO_COMMAND}}

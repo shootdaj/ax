@@ -1,0 +1,29 @@
+{
+  "name": "ax-cc",
+  "version": "1.0.0",
+  "description": "AX — Full project lifecycle for Claude Code. Planning, CI, testing, deployment, and Notion docs.",
+  "bin": {
+    "ax-cc": "./bin/cli.js"
+  },
+  "keywords": [
+    "claude-code",
+    "project-management",
+    "ci-cd",
+    "testing",
+    "deployment",
+    "gsd"
+  ],
+  "author": "shootdaj",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shootdaj/ax.git"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "references/",
+    "scripts/",
+    ".claude-plugin/"
+  ]
+}

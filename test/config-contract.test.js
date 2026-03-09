@@ -7,10 +7,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const COMMANDS_DIR = path.join(ROOT, '.claude', 'commands', 'ax');
+const SKILLS_DIR = path.join(ROOT, 'skills');
+const LEGACY_COMMANDS_DIR = path.join(ROOT, '.claude', 'commands', 'ax');
 
 function readCommand(name) {
-  return fs.readFileSync(path.join(COMMANDS_DIR, `${name}.md`), 'utf8');
+  const skillPath = path.join(SKILLS_DIR, name, 'SKILL.md');
+  if (fs.existsSync(skillPath)) return fs.readFileSync(skillPath, 'utf8');
+  return fs.readFileSync(path.join(LEGACY_COMMANDS_DIR, `${name}.md`), 'utf8');
 }
 
 // Extract the config JSON schema from init.md's Step 10 code block
@@ -67,7 +70,7 @@ describe('Config schema contract', () => {
   it('init.md produces a valid config with all top-level keys', () => {
     const requiredKeys = [
       'initialized_at', 'project_name', 'mode', 'profile',
-      'notion', 'testing', 'ci', 'phases_completed', 'milestone_history', 'last_commands'
+      'notion', 'testing', 'deployment', 'ci', 'phases_completed', 'milestone_history', 'last_commands'
     ];
     for (const key of requiredKeys) {
       assert.ok(key in schema, `Config schema missing top-level key: ${key}`);
@@ -169,6 +172,75 @@ describe('Config validation consistency', () => {
         `${cmd}.md should validate notion.doc_pages when Notion is configured`
       );
     }
+  });
+});
+
+describe('Deployment config', () => {
+  const schema = extractConfigSchema();
+
+  it('deployment section has required fields', () => {
+    assert.ok('type' in schema.deployment, 'deployment missing type');
+    assert.ok('provider' in schema.deployment, 'deployment missing provider');
+    assert.ok('url' in schema.deployment, 'deployment missing url');
+  });
+
+  it('init.md has deployment detection step', () => {
+    const init = readCommand('init');
+    assert.ok(
+      init.includes('Configure Deployment') || init.includes('Detect Deployment'),
+      'init.md should have a deployment configuration step'
+    );
+  });
+
+  it('init.md maps web apps to vercel', () => {
+    const init = readCommand('init');
+    assert.ok(
+      init.includes('vercel') && init.includes('web-app'),
+      'init.md should map web apps to Vercel'
+    );
+  });
+
+  it('finish.md has a deploy step', () => {
+    const finish = readCommand('finish');
+    assert.ok(
+      finish.includes('### Step 6: Deploy'),
+      'finish.md should have a deploy step'
+    );
+  });
+
+  it('finish.md handles all deployment providers', () => {
+    const finish = readCommand('finish');
+    const providers = ['vercel', 'npm', 'pypi', 'crates', 'go-module', 'github-releases', 'docker'];
+    for (const provider of providers) {
+      assert.ok(
+        finish.includes(provider),
+        `finish.md should handle ${provider} deployment`
+      );
+    }
+  });
+
+  it('finish.md stores deployment URL in config', () => {
+    const finish = readCommand('finish');
+    assert.ok(
+      finish.includes('config.deployment.url'),
+      'finish.md should store deployment URL in config'
+    );
+  });
+
+  it('finish.md records deployment in milestone history', () => {
+    const finish = readCommand('finish');
+    assert.ok(
+      finish.includes('"deployment"') && finish.includes('"provider"') && finish.includes('"url"'),
+      'finish.md milestone history should include deployment info'
+    );
+  });
+
+  it('finish.md skips deployment when provider is none', () => {
+    const finish = readCommand('finish');
+    assert.ok(
+      finish.includes('"none"'),
+      'finish.md should handle provider "none" (skip deployment)'
+    );
   });
 });
 

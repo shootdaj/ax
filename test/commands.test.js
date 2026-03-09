@@ -9,11 +9,18 @@ const { execSync } = require('node:child_process');
 const os = require('node:os');
 
 const ROOT = path.resolve(__dirname, '..');
-const COMMANDS_DIR = path.join(ROOT, '.claude', 'commands', 'ax');
-const REFS_DIR = path.join(ROOT, '.claude', 'ax', 'references');
+// Support both plugin layout (skills/) and legacy layout (.claude/commands/ax/)
+const SKILLS_DIR = path.join(ROOT, 'skills');
+const LEGACY_COMMANDS_DIR = path.join(ROOT, '.claude', 'commands', 'ax');
+const REFS_DIR = fs.existsSync(path.join(ROOT, 'references'))
+  ? path.join(ROOT, 'references')
+  : path.join(ROOT, '.claude', 'ax', 'references');
 
 function readCommand(name) {
-  return fs.readFileSync(path.join(COMMANDS_DIR, `${name}.md`), 'utf8');
+  // Try plugin layout first, then legacy
+  const skillPath = path.join(SKILLS_DIR, name, 'SKILL.md');
+  if (fs.existsSync(skillPath)) return fs.readFileSync(skillPath, 'utf8');
+  return fs.readFileSync(path.join(LEGACY_COMMANDS_DIR, `${name}.md`), 'utf8');
 }
 
 // Extract step numbers from ### Step N: headers
@@ -90,9 +97,9 @@ describe('Reference file existence', () => {
   });
 
   it('disable-context-monitor.js exists', () => {
-    assert.ok(
-      fs.existsSync(path.join(ROOT, '.claude', 'ax', 'disable-context-monitor.js')),
-      'Missing disable-context-monitor.js'
+    const exists = fs.existsSync(path.join(ROOT, 'scripts', 'disable-context-monitor.js'))
+      || fs.existsSync(path.join(ROOT, '.claude', 'ax', 'disable-context-monitor.js'));
+    assert.ok(exists, 'Missing disable-context-monitor.js'
     );
   });
 });
@@ -100,8 +107,9 @@ describe('Reference file existence', () => {
 describe('Command completeness', () => {
   it('all 5 command files exist', () => {
     for (const cmd of ['init', 'phase', 'run', 'finish', 'status']) {
-      const filePath = path.join(COMMANDS_DIR, `${cmd}.md`);
-      assert.ok(fs.existsSync(filePath), `Missing command: ${cmd}.md`);
+      const exists = fs.existsSync(path.join(SKILLS_DIR, cmd, 'SKILL.md'))
+        || fs.existsSync(path.join(LEGACY_COMMANDS_DIR, `${cmd}.md`));
+      assert.ok(exists, `Missing command: ${cmd}`);
     }
   });
 
@@ -222,7 +230,9 @@ describe('install.sh', () => {
 });
 
 describe('disable-context-monitor.js', () => {
-  const scriptPath = path.join(ROOT, '.claude', 'ax', 'disable-context-monitor.js');
+  const scriptPath = fs.existsSync(path.join(ROOT, 'scripts', 'disable-context-monitor.js'))
+    ? path.join(ROOT, 'scripts', 'disable-context-monitor.js')
+    : path.join(ROOT, '.claude', 'ax', 'disable-context-monitor.js');
 
   it('handles missing settings.json gracefully', () => {
     // Run with a non-existent home dir
@@ -373,6 +383,67 @@ describe('Status --quick mode', () => {
       content.includes('Glob') || content.includes('file existence') || content.includes('test file'),
       'Quick mode should check test files via Glob'
     );
+  });
+});
+
+describe('Plugin structure', () => {
+  it('plugin.json exists and has required fields', () => {
+    const pluginPath = path.join(ROOT, '.claude-plugin', 'plugin.json');
+    assert.ok(fs.existsSync(pluginPath), 'Missing .claude-plugin/plugin.json');
+    const plugin = JSON.parse(fs.readFileSync(pluginPath, 'utf8'));
+    assert.strictEqual(plugin.name, 'ax', 'Plugin name should be "ax"');
+    assert.ok(plugin.version, 'plugin.json should have version');
+    assert.ok(plugin.description, 'plugin.json should have description');
+  });
+
+  it('all 5 skills exist in skills/ directory', () => {
+    for (const skill of ['init', 'phase', 'run', 'finish', 'status']) {
+      const skillPath = path.join(ROOT, 'skills', skill, 'SKILL.md');
+      assert.ok(fs.existsSync(skillPath), `Missing skill: skills/${skill}/SKILL.md`);
+    }
+  });
+
+  it('references/ directory exists at plugin root', () => {
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'references')),
+      'Missing references/ at plugin root'
+    );
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'references', 'ci-templates')),
+      'Missing references/ci-templates/'
+    );
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'references', 'notion-templates')),
+      'Missing references/notion-templates/'
+    );
+  });
+
+  it('scripts/ directory has disable-context-monitor.js', () => {
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'scripts', 'disable-context-monitor.js')),
+      'Missing scripts/disable-context-monitor.js'
+    );
+  });
+
+  it('skills reference ${CLAUDE_PLUGIN_ROOT} for file paths', () => {
+    const init = fs.readFileSync(path.join(ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    assert.ok(
+      init.includes('${CLAUDE_PLUGIN_ROOT}'),
+      'init SKILL.md should reference ${CLAUDE_PLUGIN_ROOT} for portable paths'
+    );
+  });
+
+  it('npx CLI script exists and is executable', () => {
+    const cliPath = path.join(ROOT, 'bin', 'cli.js');
+    assert.ok(fs.existsSync(cliPath), 'Missing bin/cli.js');
+    const content = fs.readFileSync(cliPath, 'utf8');
+    assert.ok(content.startsWith('#!/usr/bin/env node'), 'cli.js should have Node shebang');
+  });
+
+  it('package.json has correct bin field', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.name, 'ax-cc', 'Package name should be ax-cc');
+    assert.ok(pkg.bin && pkg.bin['ax-cc'], 'package.json should have bin.ax-cc');
   });
 });
 

@@ -10,7 +10,7 @@ Everything lives under `.claude/`:
 - **`.claude/commands/ax/*.md`** — the 5 slash commands (the core product)
 - **`.claude/ax/references/`** — templates and CI configs consumed by the commands
 - **`.claude/ax/disable-context-monitor.js`** — utility script
-- **`test/`** — test suite (84 tests, `node --test test/*.test.js`)
+- **`test/`** — test suite (92 tests, `node --test test/*.test.js`)
 - **`install.sh`** — one-liner installer
 - **`README.md`** — user-facing docs
 
@@ -40,6 +40,7 @@ All 5 commands are implemented and working. All known gaps have been addressed. 
 - Config schema validation on every command's pre-flight
 - `/ax:status --quick` mode (file count check, no test execution)
 - Multi-milestone history tracking across `/ax:finish` cycles
+- Deployment step in `/ax:finish` — Vercel for web apps, npm/PyPI/crates for libraries, GitHub Releases for CLIs
 
 ## Future Ideas
 
@@ -65,3 +66,5 @@ These are lower-priority improvements, not blocking usage:
 - Docker compose usage must always check for null `docker_compose_file`
 - All CI templates use `{{INSTALL_COMMAND}}`, `{{LINT_COMMAND}}`, and `{{#IF_SERVICES}}` conditionals
 - Config must include `milestone_history` array (added in v0.3.0) for multi-milestone tracking
+- Config must include `deployment` object with `type`, `provider`, and `url` fields
+- Deployment in finish.md runs after tests pass (Step 6), before milestone archival (Step 7)
