@@ -210,7 +210,7 @@ describe('install.sh', () => {
 
   it('copies commands and references', () => {
     assert.ok(script.includes('commands/ax'), 'Should copy commands');
-    assert.ok(script.includes('.claude/ax/'), 'Should copy references');
+    assert.ok(script.includes('INSTALL_DIR/ax/'), 'Should copy references');
   });
 
   it('cleans up temp directory on exit', () => {

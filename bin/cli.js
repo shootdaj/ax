@@ -41,7 +41,7 @@ if (flags.has('-h') || flags.has('--help') || flags.has('help')) {
 AX — Full project lifecycle for Claude Code
 
 Usage:
-  npx ax-cc [options]
+  npx github:shootdaj/ax [options]
 
 Options:
   --global, -g       Install to ~/.claude/ (available in all projects)
@@ -50,10 +50,10 @@ Options:
   --help, -h         Show this help
 
 Examples:
-  npx ax-cc --global          Install globally
-  npx ax-cc --local           Install in current project
-  npx ax-cc -g -u             Uninstall global installation
-  npx ax-cc@latest --global   Update to latest version
+  npx github:shootdaj/ax --global       Install globally
+  npx github:shootdaj/ax --local        Install in current project
+  npx github:shootdaj/ax -g -u          Uninstall global installation
+  npx github:shootdaj/ax@main --global  Update to latest version
 
 After install, open Claude Code and run /ax:init
 `);
