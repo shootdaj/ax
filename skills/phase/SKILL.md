@@ -119,15 +119,58 @@ If tests are missing from plans, **edit the PLAN.md files** to add test tasks at
 
 ---
 
-### Step 6: Execute Phase
+### Step 6: Frontend Design (if applicable)
+
+**Skip if this phase has no frontend/UI work.** Check the phase title, requirements, and PLAN.md — if there are no HTML, CSS, UI components, pages, or visual elements, skip to Step 7.
+
+If this phase involves frontend work:
+
+1. **Ask the user if they want to give design input:**
+
+   Use AskUserQuestion:
+   > "This phase includes frontend work. Would you like to provide design direction?"
+
+   Options:
+   - **"Yes, show me design options"** — proceed to step 2
+   - **"No, use sensible defaults"** — skip to Step 7, let the executor choose a clean, functional design
+
+2. **Generate design options using the UI/UX design skill:**
+
+   Run the `ui-ux-pro-max:ui-ux-pro-max` skill via the Skill tool with a prompt like:
+   > "Design 3 distinct visual styles for: {description of the frontend from PLAN.md}. For each style, show: color palette, typography, layout approach, and a short ASCII mockup of the main view. Styles should be meaningfully different (e.g., minimal dark, colorful light, glassmorphism)."
+
+3. **Present options to the user:**
+
+   Use AskUserQuestion to show the design options:
+   > "Pick a design direction (or mix elements from multiple):"
+
+   Options:
+   - **Design A: {style name}** — {1-line description}
+   - **Design B: {style name}** — {1-line description}
+   - **Design C: {style name}** — {1-line description}
+   - **"Mix and match"** — let the user describe which elements they want from each
+
+4. **Write design spec to CONTEXT.md:**
+
+   Append the chosen design direction (or mix) to `.planning/phases/phase-{N}/CONTEXT.md` under a `## Frontend Design` section. Include:
+   - Chosen style/palette/typography
+   - Layout approach
+   - Any specific user preferences
+
+   This ensures the executor agents follow the design when building the frontend.
+
+---
+
+### Step 7: Execute Phase
 
 Run `/gsd:execute-phase $ARGUMENTS` via the Skill tool. This spawns executor agents that:
 - Implement the code in atomic commits
 - Follow the plans created in Step 4
+- Follow the frontend design spec from Step 6 (if applicable)
 
 ---
 
-### Step 7: Run Test Pyramid
+### Step 8: Run Test Pyramid
 
 Read test commands from config. Execute in order:
 
@@ -153,12 +196,12 @@ If unit tests fail, still run integration and scenario tests to get the full pic
 
 ---
 
-### Step 8: Generate Phase Report
+### Step 9: Generate Phase Report
 
 Create a phase report by reading the phase-report template from `.claude/ax/references/notion-templates/phase-report.md` and filling in:
 - Phase number and title from ROADMAP.md
 - Requirements delivered (from PLAN.md and VERIFICATION.md if available)
-- Test results from Step 7
+- Test results from Step 8
 - New tests added (from git diff of test files)
 - Architecture changes (from git diff of non-test files)
 
@@ -166,15 +209,15 @@ Write the report to `.planning/phases/phase-{N}/PHASE_REPORT.md`.
 
 ---
 
-### Step 9: Verify Work
+### Step 10: Verify Work
 
 Run `/gsd:verify-work $ARGUMENTS` via the Skill tool. This does goal-backward verification — checking that what was built actually achieves the phase goal.
 
 ---
 
-### Step 10: Handle Failures
+### Step 11: Handle Failures
 
-Check results from Steps 7 and 9:
+Check results from Steps 8 and 10:
 
 **If tests failed OR verification found gaps:**
 
@@ -184,16 +227,16 @@ Check results from Steps 7 and 9:
    - For verification gaps: create tasks to implement missing functionality
    - Write these tasks into a new plan file: `.planning/phases/phase-{N}/PLAN-gaps.md`
 3. Run `/gsd:execute-phase $ARGUMENTS` via Skill tool. The executor will pick up the new gap plan and execute the fix tasks.
-4. Re-run the test pyramid (repeat Step 7)
+4. Re-run the test pyramid (repeat Step 8)
 5. Update the phase report with gap closure results
 
 **If gap closure also fails:** Stop and display the failures. Do NOT loop infinitely. Report what succeeded and what remains broken.
 
-**If everything passed:** Continue to Step 11.
+**If everything passed:** Continue to Step 12.
 
 ---
 
-### Step 11: Update Notion Documentation
+### Step 12: Update Notion Documentation
 
 **Skip if Notion is not configured (parent_page_id is null).**
 
@@ -222,7 +265,7 @@ Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The ag
 
 ---
 
-### Step 12: Update TEST_GUIDE.md
+### Step 13: Update TEST_GUIDE.md
 
 Update the project's `TEST_GUIDE.md`:
 1. Add new entries to the "Requirement → Test Mapping" table
@@ -230,7 +273,7 @@ Update the project's `TEST_GUIDE.md`:
 
 ---
 
-### Step 13: Push Branch and Merge to Main
+### Step 14: Push Branch and Merge to Main
 
 Complete the GitHub Flow cycle for this phase:
 
@@ -291,7 +334,7 @@ Do NOT skip `gh` — it is required for GitHub Flow.
 
 ---
 
-### Step 14: Display Summary
+### Step 15: Display Summary
 
 ```
 ## Phase {N} Complete: {Title}
@@ -309,6 +352,9 @@ Do NOT skip `gh` — it is required for GitHub Flow.
 
 ### Gap Closures
 - None needed / List of gaps closed
+
+### Frontend Design
+- {Chosen style} / N/A (no frontend work)
 
 ### Notion Updated
 - Architecture ✓
