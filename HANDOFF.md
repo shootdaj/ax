@@ -22,7 +22,7 @@ scripts/
 └── disable-context-monitor.js
 bin/
 └── cli.js                 # npx installer
-test/                      # 99 tests, node --test test/*.test.js
+test/                      # 104 tests, node --test test/*.test.js
 package.json               # npm package manifest (for npx install)
 .claude-plugin/            # Claude Code plugin manifest
 .claude/commands/ax/       # Legacy layout (kept in sync)
@@ -61,6 +61,11 @@ All 5 commands are implemented and working. Key features:
 - `/ax:status --quick` mode (file count check, no test execution)
 - Multi-milestone history tracking across `/ax:finish` cycles
 - Deployment step in `/ax:finish` — Vercel for web apps, npm/PyPI/crates for libraries, GitHub Releases for CLIs
+- Frontend design step in `/ax:phase` Step 6 — invokes `ui-ux-pro-max:ui-ux-pro-max` for UI phases
+- Global Notion parent page — set once during install, auto-creates project pages per project
+- Mandatory Notion doc updates when configured — injected into CLAUDE.md, hardened in phase/finish
+- Post-deployment verification (curl health checks) in `/ax:finish`
+- Vercel routing scaffolding (vercel.json + api/index.js) in `/ax:init`
 
 ## Future Ideas
 
@@ -86,3 +91,6 @@ All 5 commands are implemented and working. Key features:
 - Config must include `milestone_history` array for multi-milestone tracking
 - Config must include `deployment` object with `type`, `provider`, and `url` fields
 - Deployment in finish.md runs after tests pass (Step 6), before milestone archival (Step 7)
+- Global config at `~/.claude/ax/global.json` stores Notion parent page across projects
+- Init checks global.json first, creates project page under global parent, stores as project's parent_page_id
+- Notion doc updates are mandatory (not optional) when configured — hardened language in phase/finish
