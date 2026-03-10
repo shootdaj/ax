@@ -90,6 +90,7 @@ describe('Config schema contract', () => {
 
   it('notion section has required structure', () => {
     assert.ok('parent_page_id' in schema.notion, 'notion missing parent_page_id');
+    assert.ok('global_parent_page_id' in schema.notion, 'notion missing global_parent_page_id');
     assert.ok('doc_pages' in schema.notion, 'notion missing doc_pages');
     assert.ok('last_updated' in schema.notion, 'notion missing last_updated');
     const expectedPages = [

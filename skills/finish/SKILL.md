@@ -68,9 +68,11 @@ This will:
 
 ### Step 4: Publish Final Notion Documentation
 
-**Skip if Notion is not configured.**
+**If `config.notion.parent_page_id` is null, skip this step.**
 
-Spawn an Agent (subagent_type: general-purpose) to create comprehensive final documentation. The agent should:
+**If Notion IS configured, this step is MANDATORY. Do NOT skip it. The milestone is not complete without final documentation.**
+
+Spawn an Agent (subagent_type: general-purpose) to create comprehensive final documentation. The agent MUST:
 
 1. **Read the entire codebase** to create accurate, up-to-date documentation
 2. **Update all Notion doc pages** (using page IDs from config):

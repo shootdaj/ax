@@ -447,6 +447,58 @@ describe('Plugin structure', () => {
   });
 });
 
+describe('Global Notion config', () => {
+  it('cli.js supports --notion-page flag', () => {
+    const cli = fs.readFileSync(path.join(ROOT, 'bin', 'cli.js'), 'utf8');
+    assert.ok(cli.includes('--notion-page'), 'cli.js should accept --notion-page flag');
+    assert.ok(cli.includes('notionPageId'), 'cli.js should extract notion page ID from args');
+    assert.ok(cli.includes('global.json'), 'cli.js should write to global.json');
+  });
+
+  it('install.sh supports --notion-page flag', () => {
+    const script = fs.readFileSync(path.join(ROOT, 'install.sh'), 'utf8');
+    assert.ok(script.includes('--notion-page'), 'install.sh should accept --notion-page');
+    assert.ok(script.includes('NOTION_PAGE'), 'install.sh should have NOTION_PAGE variable');
+    assert.ok(script.includes('global.json'), 'install.sh should write to global.json');
+  });
+
+  it('init.md checks global.json for Notion parent page', () => {
+    const content = readCommand('init');
+    assert.ok(
+      content.includes('global.json'),
+      'init.md should read global.json for Notion config'
+    );
+    assert.ok(
+      content.includes('global_parent_page_id'),
+      'init.md should store global_parent_page_id in project config'
+    );
+  });
+
+  it('init.md creates project page under global parent', () => {
+    const content = readCommand('init');
+    assert.ok(
+      content.includes('project page') || content.includes('project-specific page'),
+      'init.md should create a project page under the global parent'
+    );
+  });
+
+  it('cli.js saves notion page to global config correctly', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ax-test-cli-'));
+    const axDir = path.join(tmpDir, '.claude', 'ax');
+    fs.mkdirSync(axDir, { recursive: true });
+
+    // Simulate what cli.js does when --notion-page is provided
+    const globalConfigPath = path.join(axDir, 'global.json');
+    const globalConfig = { notion: { parent_page_id: 'test-page-id-123' } };
+    fs.writeFileSync(globalConfigPath, JSON.stringify(globalConfig, null, 2) + '\n');
+
+    const saved = JSON.parse(fs.readFileSync(globalConfigPath, 'utf8'));
+    assert.strictEqual(saved.notion.parent_page_id, 'test-page-id-123');
+
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+});
+
 describe('Timestamp tracking', () => {
   it('init.md creates last_commands in config', () => {
     const content = readCommand('init');

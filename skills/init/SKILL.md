@@ -131,13 +131,26 @@ Store all detected/provided values:
 
 ---
 
-### Step 3: Ask for Notion Parent Page ID
+### Step 3: Set Up Notion
+
+**Check for a global Notion parent page** first. Read `~/.claude/ax/global.json` — if it exists and has `notion.parent_page_id`, a global parent page was configured during AX install.
+
+**If global parent page exists:**
+
+1. Tell the user: "Using global Notion parent page from AX config."
+2. Create a **project page** under the global parent using `mcp__claude_ai_Notion__notion-create-pages`. Use the project name (from PROJECT.md) as the page title. This project page becomes the container for all this project's documentation.
+3. Store the newly created project page ID as `notion.parent_page_id` in the project config. Store the global parent ID as `notion.global_parent_page_id` (for reference).
+4. Skip to Step 4.
+
+**If no global parent page:**
 
 Use AskUserQuestion to ask:
 
-> "What is the Notion parent page ID where project documentation should be created? You can find this in the page URL — it's the 32-character hex string at the end. Example: `https://notion.so/My-Page-abc123def456...` → the ID is `abc123def456...`"
+> "What is the Notion parent page ID where project documentation should be created? You can find this in the page URL — it's the 32-character hex string at the end. Example: `https://notion.so/My-Page-abc123def456...` → the ID is `abc123def456...`
+>
+> Tip: Re-run AX install (`npx github:shootdaj/ax --global`) to set a global parent page so you don't have to provide this every time."
 
-Store the response. If the user says to skip Notion, set `notion.parent_page_id` to `null` in config and skip all Notion steps.
+If the user provides a page ID, store it as `notion.parent_page_id`. If the user says to skip Notion, set `notion.parent_page_id` to `null` in config and skip all Notion steps.
 
 ---
 
@@ -392,6 +405,26 @@ Use semantic names: `Test<Component>_<Behavior>[_<Condition>]`
 - Every requirement in ROADMAP.md must map to at least one scenario test
 ```
 
+Also, if `notion.parent_page_id` is not null in config, append this section to CLAUDE.md (check for `# Notion Documentation (AX)` to avoid duplicates):
+
+```markdown
+
+# Notion Documentation (AX)
+
+After ANY code change that merges to main — whether via AX phase or direct PR — update all relevant Notion documentation pages. Page IDs are in `.claude/ax/config.json` under `notion.doc_pages`.
+
+Pages to keep in sync:
+- **Architecture** — system design, components, patterns
+- **Data Flow** — how data moves through the system
+- **API Reference** — all endpoints, request/response formats
+- **Component Index** — all modules, their purpose and location
+- **ADRs** — architectural decisions
+- **Deployment** — deploy config, env vars, infrastructure
+- **Dev Workflow** — dev setup, commands, processes
+
+This is NOT optional. Code without doc updates is incomplete work.
+```
+
 ---
 
 ### Step 11: Write AX Config
@@ -405,7 +438,8 @@ Write `.claude/ax/config.json` with all gathered information:
   "mode": "<greenfield | brownfield>",
   "profile": "<quality | balanced | budget — from Step 4>",
   "notion": {
-    "parent_page_id": "<from Step 3 or null>",
+    "parent_page_id": "<from Step 3 — project page ID or user-provided ID or null>",
+    "global_parent_page_id": "<from global.json or null>",
     "doc_pages": {
       "architecture": "<page_id or null>",
       "data_flow": "<page_id or null>",

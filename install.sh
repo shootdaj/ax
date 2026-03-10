@@ -10,6 +10,20 @@ REPO="shootdaj/ax"
 BRANCH="main"
 INSTALL_DIR="$HOME/.claude"
 TMP_DIR=$(mktemp -d)
+NOTION_PAGE=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --notion-page)
+      NOTION_PAGE="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
@@ -65,11 +79,50 @@ fi
 version=$(node -e "console.log(require('$TMP_DIR/ax/package.json').version)" 2>/dev/null || echo "unknown")
 echo "$version" > "$INSTALL_DIR/ax/VERSION"
 
+# ── Notion setup ──────────────────────────────────────────────
+GLOBAL_CONFIG="$HOME/.claude/ax/global.json"
+EXISTING_NOTION=""
+if [ -f "$GLOBAL_CONFIG" ]; then
+  EXISTING_NOTION=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$GLOBAL_CONFIG','utf8')).notion.parent_page_id||'')}catch{console.log('')}" 2>/dev/null || echo "")
+fi
+
+if [ -z "$NOTION_PAGE" ] && [ -z "$EXISTING_NOTION" ]; then
+  # Ask interactively
+  echo ""
+  echo "Notion Integration (optional)"
+  echo "All project docs can be created under a single Notion parent page."
+  echo "Find the page ID in the URL: notion.so/My-Page-<page-id>"
+  echo ""
+  read -rp "Notion parent page ID (Enter to skip): " NOTION_PAGE
+elif [ -n "$EXISTING_NOTION" ] && [ -z "$NOTION_PAGE" ]; then
+  echo "  Notion:     Using existing parent page $EXISTING_NOTION"
+fi
+
+# Save to global config if we have a page ID
+if [ -n "$NOTION_PAGE" ]; then
+  mkdir -p "$(dirname "$GLOBAL_CONFIG")"
+  node -e "
+    const fs = require('fs');
+    const p = '$GLOBAL_CONFIG';
+    let cfg = {};
+    try { cfg = JSON.parse(fs.readFileSync(p, 'utf8')); } catch {}
+    cfg.notion = cfg.notion || {};
+    cfg.notion.parent_page_id = '$NOTION_PAGE';
+    fs.writeFileSync(p, JSON.stringify(cfg, null, 2) + '\n');
+  "
+  echo "  Notion:     Parent page saved to global config"
+fi
+
 echo ""
 echo "AX installed successfully!"
 echo ""
 echo "  Commands:   $INSTALL_DIR/commands/ax/"
 echo "  References: $INSTALL_DIR/ax/"
 echo "  Version:    $version"
+if [ -n "$NOTION_PAGE" ]; then
+  echo "  Notion:     $NOTION_PAGE"
+elif [ -n "$EXISTING_NOTION" ]; then
+  echo "  Notion:     $EXISTING_NOTION"
+fi
 echo ""
 echo "Usage: Open Claude Code in any project and run /ax:init"

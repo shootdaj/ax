@@ -238,19 +238,26 @@ Check results from Steps 8 and 10:
 
 ### Step 12: Update Notion Documentation
 
-**Skip if Notion is not configured (parent_page_id is null).**
+**If `config.notion.parent_page_id` is null, skip to the config update (substep 4) below.**
 
-Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The agent should:
+**If Notion IS configured, this step is MANDATORY. Code without doc updates is incomplete work. Do NOT skip this.**
+
+Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The agent MUST:
 
 1. Read the current codebase to understand architecture, API, and components
-2. Update these Notion pages (using page IDs from config):
+2. Update **ALL relevant** Notion pages (using page IDs from `config.notion.doc_pages`):
    - **Architecture** — update with any structural changes from this phase
-   - **API Reference** — add/update any new endpoints
-   - **Component Index** — add/update any new components
+   - **Data Flow** — update if data flow changed (new services, DB schema, API contracts)
+   - **API Reference** — add/update any new endpoints, request/response formats
+   - **Component Index** — add/update any new components, files, modules
+   - **ADRs** — add entries for any architectural decisions made in this phase
+   - **Deployment** — update if deployment config, env vars, or infrastructure changed
+   - **Dev Workflow** — update if dev setup, commands, or processes changed
 3. Create a new Phase Report page as a child of the "Phase Reports" page:
    - Use the content from `.planning/phases/phase-{N}/PHASE_REPORT.md`
+4. **Verify updates**: After updating, confirm each page was actually modified (not just attempted). Log which pages were updated.
 
-4. Update `.claude/ax/config.json`:
+**Always** update `.claude/ax/config.json` (even if Notion is null):
    - Append a phase record to `phases_completed`:
      ```json
      {
@@ -260,7 +267,7 @@ Spawn an Agent (subagent_type: general-purpose) to handle Notion updates. The ag
        "completed_at": "<ISO timestamp — now>"
      }
      ```
-   - Update `notion.last_updated` timestamp
+   - Update `notion.last_updated` timestamp (if Notion configured)
    - Update `last_commands.phase` to current ISO timestamp
 
 ---
