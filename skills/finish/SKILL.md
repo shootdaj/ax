@@ -178,6 +178,22 @@ Log a note that the image is built locally. If a container registry is configure
 
 If deployment fails, log the error but continue — do not block milestone completion.
 
+**Post-deployment verification (web apps only — Vercel, Docker):**
+
+After deploying, verify the live app actually works:
+
+1. Wait 10 seconds for deployment to propagate
+2. Test the health/root endpoint:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" {deployment_url}/health || curl -s -o /dev/null -w "%{http_code}" {deployment_url}/
+   ```
+3. Test 2-3 key API endpoints from the app (pick from the routes defined in the codebase)
+4. If any endpoint returns a non-2xx status:
+   - Read vercel.json and the Express app to check for routing mismatches
+   - Common issue: Vercel does NOT strip path prefixes — `/api/(.*)` passes the full `/api/...` URL to Express, so Express routes must use their full paths
+   - Fix the issue, redeploy with `vercel --prod --yes`, and re-verify
+5. Only proceed to Step 7 once at least the health endpoint returns 200
+
 ---
 
 ### Step 7: Archive Milestone to History

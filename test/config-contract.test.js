@@ -19,8 +19,9 @@ function readCommand(name) {
 // Extract the config JSON schema from init.md's Step 10 code block
 function extractConfigSchema() {
   const init = readCommand('init');
-  // Find the JSON block after "Write AX Config" / "config.json"
-  const match = init.match(/config\.json[\s\S]*?```json\n([\s\S]*?)```/);
+  // Find the JSON block after "Write AX Config" — look for the config.json block
+  // specifically after the "Write" instruction, not any earlier json block (like vercel.json)
+  const match = init.match(/Write.*config\.json[\s\S]*?```json\n([\s\S]*?)```/);
   assert.ok(match, 'init.md should contain config.json schema in a JSON code block');
   // The JSON has placeholder values — normalize them to make it parseable
   let json = match[1]

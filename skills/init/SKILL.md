@@ -191,7 +191,7 @@ Determine how this project should be deployed based on its type and stack.
 
 If the user overrides, use their choice.
 
-**For Vercel deployments**, set up the Vercel CLI during init:
+**For Vercel deployments**, set up the Vercel CLI and scaffold deployment config during init:
 
 ```bash
 # Install Vercel CLI if not present
@@ -203,6 +203,30 @@ vercel whoami || vercel login
 # Link project to Vercel (creates .vercel/)
 vercel link --yes
 ```
+
+Then create `vercel.json` to ensure correct routing. For Node.js/Express apps:
+
+```json
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/index.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/(.*)", "dest": "/api/index.js" }
+  ]
+}
+```
+
+Also create the Vercel serverless entry point at `api/index.js`:
+
+```js
+const app = require('../src/app');
+module.exports = app;
+```
+
+**Important:** All Express routes must use their full paths (e.g. `/api/flags`, `/health`). Vercel does NOT strip path prefixes — the route `"/api/(.*)"` passes the full original URL to Express.
 
 If Vercel setup fails, log a warning but continue. Deployment can be configured later.
 
